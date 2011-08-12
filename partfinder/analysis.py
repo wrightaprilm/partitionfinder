@@ -339,9 +339,9 @@ class Analysis(object):
         while True:
             log.info("***Greedy algorithm step %d***" % round)
 
-            #get a list of all possible lumpings of the best_scheme
-            lumpings = algorithm.lumpings(start_description)
-
+            #get a list of all possible neighbours of the best_scheme
+            lumpings = algorithm.get_neighbours(start_description)
+            
             #we reset the counters as we go, for better user information
             self.total_scheme_num = len(lumpings)
             self.schemes_analysed = 0
