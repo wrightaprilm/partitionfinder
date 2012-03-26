@@ -51,31 +51,19 @@ class AllAnalysis(Analysis):
 
 class GreedyAnalysis(Analysis):
 
-    def do_analysis(self):
-        '''A greedy algorithm for heuristic partitioning searches'''
-        log.info("Performing greedy analysis")
-        models = self.cfg.models
+    def do_forwards_analysis(self):
+        '''A greedy algorithm for heuristic partitioning searches
+        This one does a quick pass using just HKY+G model to get an OK starting scheme
+        '''
+        log.info("Looking for a starting scheme")
         model_selection = self.cfg.model_selection
         partnum = len(self.cfg.partitions)
+        models = self.cfg.models
 
-        self.total_scheme_num = submodels.count_greedy_schemes(partnum)
-        log.info("This will result in a maximum of %s schemes being created", self.total_scheme_num)
-
-        self.total_subset_num = submodels.count_greedy_subsets(partnum)
-        log.info("PartitionFinder will have to analyse a maximum of %d subsets of sites to complete this analysis" %(self.total_subset_num))
-
-        if self.total_subset_num>10000:
-            log.warning("%d is a lot of subsets, this might take a long time to analyse", self.total_subset_num)
-            log.warning("Perhaps consider using a different search scheme instead (see Manual)")
-
-        #clear any schemes that are currently loaded
-        # TODO Not sure we need this...
-        self.cfg.schemes.clear_schemes()        
-                
         #start with the most partitioned scheme
         start_description = range(len(self.cfg.partitions))
         start_scheme = scheme.create_scheme(self.cfg, 1, start_description)
-        log.info("Analysing starting scheme (scheme %s)" % start_scheme.name)
+        log.info("Analysing fully partitioned scheme")
         result = self.analyse_scheme(start_scheme, models)
         
         def get_score(my_result):
@@ -101,17 +89,13 @@ class GreedyAnalysis(Analysis):
         #now we try out all lumpings of the current scheme, to see if we can find a better one
         #and if we do, we just keep going
         while True:
-            log.info("***Greedy algorithm step %d***" % step)
 
             #get a list of all possible lumpings of the best_scheme
-            lumpings = algorithm.lumpings(start_description)
-
-            #we reset the counters as we go, for better user information
-            self.total_scheme_num = len(lumpings)
-            self.schemes_analysed = 0
+            lumpings = algorithm.get_neighbours(start_description)
 
             best_lumping_score = None
             for lumped_description in lumpings:
+
                 lumped_scheme = scheme.create_scheme(self.cfg, cur_s, lumped_description)
                 cur_s += 1
                 result = self.analyse_scheme(lumped_scheme, models)
@@ -135,11 +119,102 @@ class GreedyAnalysis(Analysis):
             else:
                 break
 
-        log.info("Greedy algorithm finished after %d steps" % step)
-        log.info("Highest scoring scheme is scheme %s, with %s score of %.3f"
-                 %(best_result.scheme.name, model_selection, best_score))
+        return best_scheme, start_description
 
-        self.best_result = best_result
+    def do_neighbour_analysis(self, start_description, start_scheme):
+        '''A greedy algorithm for heuristic partitioning searches'''
+        models = self.cfg.models        
+        model_selection = self.cfg.model_selection
+        partnum = len(self.cfg.partitions)
+        self.cfg.schemes.clear_schemes()        
+  
+        log.info("***Beginning Neighbour Analysis***")
+        log.info("Analysing start scheme with all models")
+        result = self.analyse_scheme(start_scheme, models)
+               
+        def get_score(my_result):
+            #TODO: this is bad. Should use self.cfg.model_selection, or write
+            #a new model_selection for scheme.py
+            if model_selection=="aic":
+                score=my_result.aic
+            elif model_selection=="aicc":
+                score=my_result.aicc
+            elif model_selection=="bic":
+                score=my_result.bic
+            else:
+                log.error("Unrecognised model_selection variable '%s', please check" %(score))
+                raise AnalysisError
+            return score
+
+        best_result = result
+        best_score  = get_score(result)
+        log.info("Starting scheme has score: %.3f" % best_score)
+                         
+        step = 1
+        cur_s = 2
+
+        #now we try out all lumpings of the current scheme, to see if we can find a better one
+        #and if we do, we just keep going
+        while True:
+            log.info("***Neighbour algorithm step %d***" % step)
+
+            #get a list of all possible lumpings of the best_scheme
+            lumpings = algorithm.get_neighbours(start_description)
+
+            best_lumping_score = None
+            for lumped_description in lumpings:
+
+                lumped_scheme = scheme.create_scheme(self.cfg, cur_s, lumped_description)
+                cur_s += 1
+                result = self.analyse_scheme(lumped_scheme, models)
+                new_score = get_score(result)
+
+                if best_lumping_score==None or new_score < best_lumping_score:
+                    best_lumping_score  = new_score
+                    best_lumping_result = result
+                    best_lumping_scheme = lumped_scheme
+                    best_lumping_desc   = lumped_description
+
+            log.info("Best scheme: %s" % best_lumping_scheme.name)
+            log.info("Best score: %.3f" % best_lumping_score)
+
+            if best_lumping_score < best_score:
+                best_scheme = best_lumping_scheme
+                best_score  = best_lumping_score
+                best_result = best_lumping_result
+                start_description = best_lumping_desc               
+                if len(set(best_lumping_desc)) == 1: #then it's the scheme with everything equal, so quit
+                    break
+                step += 1
+                        
+            else:
+                break
+        
+        return best_scheme, start_description, best_result, best_score
+
+
+    def do_analysis(self):
+        models = self.cfg.models #remember the models
+        model_selection = self.cfg.model_selection
+        partnum = len(self.cfg.partitions)
+        self.total_scheme_num = submodels.count_all_schemes(partnum)
+        self.total_subset_num = submodels.count_all_subsets(partnum)
+
+        #clear any schemes that are currently loaded
+        # TODO Not sure we need this...
+        self.cfg.schemes.clear_schemes()        
+                
+        #first we get a quick and dirty scheme using a forwards search the simplest model
+        self.cfg.models = ["LG+G"]
+        start_scheme, start_description = self.do_forwards_analysis()
+        
+        #now we do sequential passes of the neighbour algorithm
+        self.cfg.schemes.clear_schemes()
+        self.schemes_analysed = 0
+        self.cfg.models = models
+        best_scheme, start_description, best_result, best_score = self.do_neighbour_analysis(start_description, start_scheme)
+
+        self.best_result = best_result                
 
 
     def report(self):

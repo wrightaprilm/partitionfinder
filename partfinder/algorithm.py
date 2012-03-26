@@ -74,4 +74,85 @@ def lumpings(scheme):
 
 	return lumpings
 
+def minimise_scheme_description(description):
+    '''Start with this: [5,1,2,6,3,4,6]   
+    then minimise the numbers to this: [0,1,2,3,4,5,3]'''
+    nums = set(description)
+    i = 0
+    replacements = {}
+    for num in description:
+        if replacements.has_key(num) == False: 
+            replacements[num] = i
+            i = i + 1
+    new_description = []
+    for item in description:
+        new_description.append(replacements[item])
+    return new_description
 
+def split_scheme(num, split, scheme):
+    #start with e.g. [0,1,2,0,3,4,0]
+    #and this: split=[0,1,1]
+    #and this: num=0
+    #and get this: [5,1,2,6,3,4,6]
+    #and then minimise the numbers to this: [0,1,2,3,4,5,3]
+    #start with a number bigger than any found in scheme, to be safe
+    
+    #a quick check for sensible-ness
+    if len(split) != scheme.count(num):
+        print "There's a problem with the split_scheme function"
+        print "The description of the split doesn't match the scheme description to split"
+        return []    
+    start_num = max(scheme) + 1
+    count = 0
+    new_scheme=[]
+    for item in scheme:
+        if num==item:
+            new_scheme.append(split[count]+start_num)
+            count = count+1
+        else:
+            new_scheme.append(item)
+    new_scheme = minimise_scheme_description(new_scheme)
+    return new_scheme
+       
+def generate_splits(N):
+    start = [0]*N
+    splits = []
+    for i in range(N):
+        split = []
+        split.extend(start)
+        split[i] = 1
+        splits.append(tuple(minimise_scheme_description(split)))
+    splits = list(set(splits))
+    final = []
+    for thing in splits:
+        final.append(list(thing))
+    return final
+    
+def splittings(scheme):
+    """generate all possible splittings of a given scheme, where a splitting involves splitting out one subset from a list of >1 initial subsets
+    scheme has to be a list of digits
+    """
+    #get the numbers involved in the scheme
+    nums = set(scheme) #the numbers in this scheme
+    subs = []
+    splittings = []
+    possible_splits = {} #keyed by number in original scheme	
+    for num in nums:
+        if scheme.count(num)>1: #we could split it
+            splits = generate_splits(scheme.count(num)) #careful, these will have numbers that overlap with the original scheme description
+            for split in splits: #we can define a new scheme                
+                splittings.append(split_scheme(num, split, scheme))
+    return splittings
+
+def get_neighbours(scheme):
+    """get all the scheme one move away from a given scheme, either by splits or lumps"""
+    neighbours = splittings(scheme) + lumpings(scheme)
+    temp = []
+    #now we do some work to exclude duplicates
+    for thing in neighbours:
+        temp.append(tuple(thing))
+    temp_set = set(temp)
+    final =  []
+    for thing in temp_set:
+        final.append(list(thing))
+    return final
