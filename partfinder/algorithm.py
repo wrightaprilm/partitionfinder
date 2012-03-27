@@ -81,7 +81,7 @@ def minimise_scheme_description(description):
     i = 0
     replacements = {}
     for num in description:
-        if replacements.has_key(num) == False: 
+        if replacements.has_key(num) == False:
             replacements[num] = i
             i = i + 1
     new_description = []
@@ -114,7 +114,17 @@ def split_scheme(num, split, scheme):
     new_scheme = minimise_scheme_description(new_scheme)
     return new_scheme
        
+def generate_all_splits(N):
+    """This generates all possible ways of splitting a sequence of length N"""
+    from itertools import product
+    splits = set()
+    permutation_iterator = product('01', repeat=N)
+    for thing in permutation_iterator:
+        splits.add(tuple(minimise_scheme_description(thing)))
+    
+
 def generate_splits(N):
+    """This generates first-order splits only, of a given length"""
     start = [0]*N
     splits = []
     for i in range(N):

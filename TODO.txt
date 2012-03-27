@@ -1,14 +1,35 @@
-Rob protein stuff
+Rob new search stuff
 _________________
 
 TODO
+* a problem is that trying all possible splits isn't possible so, I could try this:
+    * get an OK starting scheme using GTR+G or LG+G
+    * try lumpings and splittings based on e.g.:
+        * tree length
+        * GTR parameters
+        * gamma shape parameter
+    * assuming I can make sensible proposals for these (e.g. try this splitting or this lumping)
+      then I can easily just cycle through these proposals, maybe quitting if I get through everything without finding improvemnt
+      
+e.g. pseudocode:
+
+1. Get rough starting scheme (just GTR+G)
+2. get list of all subsets in start scheme, and their parameters:
+3. propose lumpings based on 2 (for N subsets in start, could propose lumpings to give N-1 all the way down to 1 if I like, or could limit search space to e.g. N-3 or N-4 for efficiency)
+4. get list of all subsets with >1 data block
+5. propose splittings based on 4 (e.g. for each subset of K datablocks, I could propose the best split into 2, into 3 and up to K. Again, I could limit it to <=4 or 5, for efficiency)
+6. Evaluate all proposed splittings and lumpings
+7. Choose best one and set to starting scheme, go back to 2
+
+8. Once this is done, run a final thorough loop of neighbour searches, just to make sure
+
+This is probably OK, but it's not clear how helpful it will really be... maybe leave this as an honours/phd project.
+
+DONE
 * in new_search: tidy up the greedy algorithm, it's a bit of a mess
 * including (but not limited to) putting the 'model_selection' thing into schemes. This is TOO ugly right now!
 * AND: neatining up that while loop, which is pretty hideous
 * THEN: fix a potential bug in the neighbour analysis, in which if the start_scheme isn't beaten in the first round, it fails
-
-
-DONE
 * Run PF on a single subset of a protein alignment, compare to ProtTest and jModeltest
 * use Name_fixer2 on large analysed datasets, and start them re-running on the server
 

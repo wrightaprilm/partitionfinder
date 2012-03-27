@@ -51,12 +51,47 @@ class AllAnalysis(Analysis):
 
 class GreedyAnalysis(Analysis):
 
+    def get_score(self, my_result):
+        #TODO: this is bad. Should use self.cfg.model_selection, or write
+        #a new model_selection for scheme.py
+        model_selection = self.cfg.model_selection
+        if model_selection=="aic":
+            score=my_result.aic
+        elif model_selection=="aicc":
+            score=my_result.aicc
+        elif model_selection=="bic":
+            score=my_result.bic
+        else:
+            log.error("Unrecognised model_selection variable '%s', please check" %(score))
+            raise AnalysisError
+        return score
+    
+    def get_best_scheme_from_list(self, scheme_description_list):
+        """
+        Take a list of scheme descriptions, analyse them all, and return the best one
+        """
+        self.cfg.schemes.clear_schemes()        
+        best_score = None
+        cur_s = 1
+        for description in scheme_description_list:
+
+            newscheme = scheme.create_scheme(self.cfg, cur_s, description)
+            cur_s += 1
+            newscheme.result = self.analyse_scheme(newscheme, self.cfg.models)
+            newscheme.score = self.get_score(newscheme.result)
+            newscheme.description = description
+    
+            if best_score==None or newscheme.score < best_score:
+                best_score  = newscheme.score
+                best_scheme = newscheme
+
+        return best_scheme                
+
     def do_forwards_analysis(self):
         '''A greedy algorithm for heuristic partitioning searches
         This one does a quick pass using just HKY+G model to get an OK starting scheme
         '''
-        log.info("Looking for a starting scheme")
-        model_selection = self.cfg.model_selection
+        log.info("Performing greedy analysis")
         partnum = len(self.cfg.partitions)
         models = self.cfg.models
 
@@ -66,134 +101,85 @@ class GreedyAnalysis(Analysis):
         log.info("Analysing fully partitioned scheme")
         result = self.analyse_scheme(start_scheme, models)
         
-        def get_score(my_result):
-            #TODO: this is bad. Should use self.cfg.model_selection, or write
-            #a new model_selection for scheme.py
-            if model_selection=="aic":
-                score=my_result.aic
-            elif model_selection=="aicc":
-                score=my_result.aicc
-            elif model_selection=="bic":
-                score=my_result.bic
-            else:
-                log.error("Unrecognised model_selection variable '%s', please check" %(score))
-                raise AnalysisError
-            return score
-
         best_result = result
-        best_score  = get_score(result)
-                         
+        best_score  = self.get_score(result)
+                
         step = 1
         cur_s = 2
 
         #now we try out all lumpings of the current scheme, to see if we can find a better one
         #and if we do, we just keep going
         while True:
-            log.info("***Starting scheme search step %s***" % step)
+            log.info("***Greedy analysis step %s***" % step)
             #get a list of all possible lumpings of the best_scheme
-            lumpings = algorithm.get_neighbours(start_description)
+            lumpings = algorithm.lumpings(start_description)
+            
+            self.cfg.schemes.clear_schemes()        
+            best_lumped_scheme = self.get_best_scheme_from_list(lumpings)
 
-            best_lumping_score = None
-            for lumped_description in lumpings:
-
-                lumped_scheme = scheme.create_scheme(self.cfg, cur_s, lumped_description)
-                cur_s += 1
-                result = self.analyse_scheme(lumped_scheme, models)
-                new_score = get_score(result)
-
-                if best_lumping_score==None or new_score < best_lumping_score:
-                    best_lumping_score  = new_score
-                    best_lumping_result = result
-                    best_lumping_scheme = lumped_scheme
-                    best_lumping_desc   = lumped_description
-
-            if best_lumping_score < best_score:
-                best_scheme = best_lumping_scheme
-                best_score  = best_lumping_score
-                best_result = best_lumping_result
-                start_description = best_lumping_desc               
-                if len(set(best_lumping_desc)) == 1: #then it's the scheme with everything equal, so quit
+            if best_lumped_scheme.score < best_score:
+                best_scheme = best_lumped_scheme
+                best_score  = best_lumped_scheme.score
+                start_description = best_lumped_scheme.description
+                if len(set(best_lumped_scheme.description)) == 1: #then it's the scheme with everything equal, so quit
                     break
                 step += 1
 
             else:
                 break
 
-        log.info("Starting Scheme: %s" % best_scheme)
+        log.info("Best scheme from greedy analysis: %s" % best_scheme)
 
-        return best_scheme, start_description
+        return best_scheme
 
-    def do_neighbour_analysis(self, start_description, start_scheme):
-        '''A greedy algorithm for heuristic partitioning searches'''
+    def do_neighbour_analysis(self, start_scheme):
+        '''Start with a scheme, find the best scheme by neighbour searches'''
         models = self.cfg.models        
-        model_selection = self.cfg.model_selection
-        partnum = len(self.cfg.partitions)
         self.cfg.schemes.clear_schemes()        
   
         log.info("***Beginning Neighbour Analysis***")
-        log.info("Analysing start scheme with all models")
-        print models
-        result = self.analyse_scheme(start_scheme, models)
-                
-        def get_score(my_result):
-            #TODO: this is bad. Should use self.cfg.model_selection, or write
-            #a new model_selection for scheme.py
-            if model_selection=="aic":
-                score=my_result.aic
-            elif model_selection=="aicc":
-                score=my_result.aicc
-            elif model_selection=="bic":
-                score=my_result.bic
-            else:
-                log.error("Unrecognised model_selection variable '%s', please check" %(score))
-                raise AnalysisError
-            return score
+        log.info("Models: %s" % models)
+        log.info("Analysing starting scheme")
+        start_scheme.result = self.analyse_scheme(start_scheme, models)
+        start_scheme.score = self.get_score(start_scheme.result)
 
-        best_result = result
-        best_score  = get_score(result)
+        best_result = start_scheme.result
+        best_score  = start_scheme.score
+        best_scheme = start_scheme
+        
         log.info("Starting scheme has score: %.3f" % best_score)
                          
         step = 1
         cur_s = 2
-
-        #now we try out all lumpings of the current scheme, to see if we can find a better one
+        start_description = start_scheme.description
+        
+        #now we try out all neighbours of the current scheme, to see if we can find a better one
         #and if we do, we just keep going
         while True:
             log.info("***Neighbour algorithm step %d***" % step)
 
             #get a list of all possible lumpings of the best_scheme
-            lumpings = algorithm.get_neighbours(start_description)
+            neighbours = algorithm.get_neighbours(start_description)
+            log.info("Getting neighbours of this scheme: %s" % start_description)
+            log.info("Neighbours are: %s" % neighbours)
+            self.cfg.schemes.clear_schemes()        
+            best_neighbour_scheme = self.get_best_scheme_from_list(neighbours)
 
-            best_lumping_score = None
-            for lumped_description in lumpings:
+            log.info("Best scheme: %s" % best_neighbour_scheme.name)
+            log.info("Best score: %.3f" % best_neighbour_scheme.score)
 
-                lumped_scheme = scheme.create_scheme(self.cfg, cur_s, lumped_description)
-                cur_s += 1
-                result = self.analyse_scheme(lumped_scheme, models)
-                new_score = get_score(result)
-
-                if best_lumping_score==None or new_score < best_lumping_score:
-                    best_lumping_score  = new_score
-                    best_lumping_result = result
-                    best_lumping_scheme = lumped_scheme
-                    best_lumping_desc   = lumped_description
-
-            log.info("Best scheme: %s" % best_lumping_scheme.name)
-            log.info("Best score: %.3f" % best_lumping_score)
-
-            if best_lumping_score < best_score:
-                best_scheme = best_lumping_scheme
-                best_score  = best_lumping_score
-                best_result = best_lumping_result
-                start_description = best_lumping_desc               
-                if len(set(best_lumping_desc)) == 1: #then it's the scheme with everything equal, so quit
+            if best_neighbour_scheme.score < best_score:
+                best_scheme = best_neighbour_scheme
+                best_score  = best_neighbour_scheme.score
+                start_description = best_neighbour_scheme.description           
+                if len(set(best_neighbour_scheme.description)) == 1: #then it's the scheme with everything equal, so quit
                     break
                 step += 1
                         
             else:
                 break
         
-        return best_scheme, start_description, best_result, best_score
+        return best_scheme
 
 
     def do_analysis(self):
@@ -209,16 +195,13 @@ class GreedyAnalysis(Analysis):
                 
         #first we get a quick and dirty scheme using a forwards search the simplest model
         self.cfg.models = ["LG+G"]
-        start_scheme, start_description = self.do_forwards_analysis()
+        start_scheme = self.do_forwards_analysis()
         
-        #now we do sequential passes of the neighbour algorithm
-
-        self.cfg.schemes.clear_schemes()
-        self.schemes_analysed = 0
-        #self.cfg.models = models #now we go with all possible models
-        best_scheme, start_description, best_result, best_score = self.do_neighbour_analysis(start_description, start_scheme)
-
-        self.best_result = best_result                
+        #now we use the neighbour algorithm to look around from the start scheme
+        self.cfg.models = models #reset to original model set
+        best_scheme = self.do_neighbour_analysis(start_scheme)
+        
+        self.best_result = best_scheme.result               
 
 
     def report(self):
