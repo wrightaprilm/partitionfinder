@@ -2,11 +2,15 @@ Rob protein stuff
 _________________
 
 TODO
+* in new_search: tidy up the greedy algorithm, it's a bit of a mess
+* including (but not limited to) putting the 'model_selection' thing into schemes. This is TOO ugly right now!
+* AND: neatining up that while loop, which is pretty hideous
+* THEN: fix a potential bug in the neighbour analysis, in which if the start_scheme isn't beaten in the first round, it fails
 
-* Run PF on a single subset of a protein alignment, compare to ProtTest and jModeltest
-* use Name_fixer2 on large analysed datasets, and start them re-running on the server
 
 DONE
+* Run PF on a single subset of a protein alignment, compare to ProtTest and jModeltest
+* use Name_fixer2 on large analysed datasets, and start them re-running on the server
 
 
 Brett test enhancing:

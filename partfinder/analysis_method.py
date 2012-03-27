@@ -89,7 +89,7 @@ class GreedyAnalysis(Analysis):
         #now we try out all lumpings of the current scheme, to see if we can find a better one
         #and if we do, we just keep going
         while True:
-
+            log.info("***Starting scheme search step %s***" % step)
             #get a list of all possible lumpings of the best_scheme
             lumpings = algorithm.get_neighbours(start_description)
 
@@ -119,6 +119,8 @@ class GreedyAnalysis(Analysis):
             else:
                 break
 
+        log.info("Starting Scheme: %s" % best_scheme)
+
         return best_scheme, start_description
 
     def do_neighbour_analysis(self, start_description, start_scheme):
@@ -130,8 +132,9 @@ class GreedyAnalysis(Analysis):
   
         log.info("***Beginning Neighbour Analysis***")
         log.info("Analysing start scheme with all models")
+        print models
         result = self.analyse_scheme(start_scheme, models)
-               
+                
         def get_score(my_result):
             #TODO: this is bad. Should use self.cfg.model_selection, or write
             #a new model_selection for scheme.py
@@ -209,9 +212,10 @@ class GreedyAnalysis(Analysis):
         start_scheme, start_description = self.do_forwards_analysis()
         
         #now we do sequential passes of the neighbour algorithm
+
         self.cfg.schemes.clear_schemes()
         self.schemes_analysed = 0
-        self.cfg.models = models
+        #self.cfg.models = models #now we go with all possible models
         best_scheme, start_description, best_result, best_score = self.do_neighbour_analysis(start_description, start_scheme)
 
         self.best_result = best_result                
