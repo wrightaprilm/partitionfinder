@@ -12,3 +12,6 @@ programs/phyml_source/build/
 results.bin
 .DS_Store
 analysis/
+build/
+dist/
+.DS_Store

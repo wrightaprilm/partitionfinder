@@ -142,7 +142,7 @@ class MainFrame(wx.Frame):
         self.SetState(FINISHED_STATE)
 
     def OnGo(self, evt):
-        self.thread = PFThread(self.cfg)
+        self.thread = PFThread(self, self.cfg)
         self.thread.Start()
 
     def OnLoadConfig(self, evt):
@@ -189,11 +189,6 @@ class MainFrame(wx.Frame):
         MenuBar.Append(HelpMenu, "&Help")
 
         self.SetMenuBar(MenuBar)
-
-    # def OnPressed(self, evt):
-        # if self.running is None:
-            # self.running = PFThread()
-            # self.running.Start()
 
     def OnQuit(self,Event):
         self.Destroy()

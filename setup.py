@@ -16,7 +16,7 @@ setup(
     	py2app = dict(
     		#includes = ['objc', 'Foundation', 'AppKit'],
     		#packages = ['GUI'],
-            # resources=['resources/License.txt'],
+            resources=['programs/phyml'],
             iconfile='resources/pf.icns',
             packages='wx',
             site_packages=True,
