@@ -66,7 +66,7 @@ class LogHtmlListBox(wx.HtmlListBox):
         dc.DrawLine(rect.left, rect.bottom, rect.right, rect.bottom)
 
 class MainFrame(wx.Frame):
-    def __init__(self, title = "Partition Finder"):
+    def __init__(self, title = "PartitionFinder"):
         wx.Frame.__init__(self, None , -1, title)
 
         layout = self.BuildLayout()
