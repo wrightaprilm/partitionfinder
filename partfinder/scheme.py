@@ -162,7 +162,9 @@ class SchemeSet(object):
             log.warning(
                 "Scheme named %s being added is identical to existing %s",
                 scheme.name, existing_scheme)
+            
             # raise SchemeError
+        
 
         self.schemes_by_name[scheme.name] = scheme
         self.schemes_by_subsets[scheme.part_subsets] = scheme
@@ -201,6 +203,58 @@ def create_scheme(cfg, scheme_name, scheme_description):
     new_scheme = Scheme(cfg, str(scheme_name), *tuple(created_subsets))
 		
     return new_scheme
+
+def check_if_scheme_exists(cfg, scheme_name, scheme_description):
+    """Check a scheme against the existing schemes to see if the name or description
+    are already being used by an existing scheme
+    If there's an existing scheme, we return it...
+    
+    """
+    import subset
+    import submodels
+    existing_scheme=False
+    
+    # Now generate the pattern
+    subs = {}
+    # We use the numbers returned to group the different subsets
+    for sub_index, grouping in enumerate(scheme_description):
+        insub = subs.setdefault(grouping, [])
+        insub.append(sub_index)
+    # We now have what we need to create a subset. Each entry will have a
+    # set of values which are the index for the partition
+    created_subsets = []
+    for sub_indexes in subs.values():
+        sub = subset.Subset(*tuple([cfg.partitions[i] for i in sub_indexes]))
+        created_subsets.append(sub)
+    
+    subsets = created_subsets
+        
+    part_subsets = set()
+
+    # This is really long-winded, but it is mainly for error-checking
+    partitions = set()
+    duplicates = []
+    for s in subsets:
+        for p in s:
+            if p in partitions:
+                # This is an error -- we'll collect them up
+                duplicates.append(str(p))
+            else:
+                partitions.add(p)
+        part_subsets.add(s.partitions)
+    
+    part_subsets = frozenset(part_subsets)
+
+    #now check if that scheme exists...
+    if part_subsets in cfg.schemes.schemes_by_subsets:
+        existing_scheme = \
+                cfg.schemes.schemes_by_subsets[part_subsets]
+        log.debug(
+            "Scheme named %s being checked is identical to existing %s",
+            scheme_name, existing_scheme)
+
+    return existing_scheme
+    
 
 def model_to_scheme(model, scheme_name, cfg):
 	"""Turn a model definition e.g. [0, 1, 2, 3, 4] into a scheme"""

@@ -6,6 +6,7 @@ import scheme
 import algorithm
 import submodels
 from analysis import Analysis, AnalysisError
+import random
 
 class UserAnalysis(Analysis):
 
@@ -50,6 +51,118 @@ class AllAnalysis(Analysis):
             self.analyse_scheme(s, models)
 
 class GreedyAnalysis(Analysis):
+    def do_analysis(self):
+        '''A greedy algorithm for heuristic partitioning searches'''
+        greediest=True
+        log.info("Performing greediest analysis")
+        models = self.cfg.models
+        model_selection = self.cfg.model_selection
+        partnum = len(self.cfg.partitions)
+
+        self.total_scheme_num = submodels.count_greedy_schemes(partnum)
+        log.info("This will result in a maximum of %s schemes being created", self.total_scheme_num)
+
+        self.total_subset_num = submodels.count_greedy_subsets(partnum)
+        log.info("PartitionFinder will have to analyse a maximum of %d subsets of sites to complete this analysis" %(self.total_subset_num))
+
+        if self.total_subset_num>10000:
+            log.warning("%d is a lot of subsets, this might take a long time to analyse", self.total_subset_num)
+            log.warning("Perhaps consider using a different search scheme instead (see Manual)")
+
+        #clear any schemes that are currently loaded
+        # TODO Not sure we need this...
+        self.cfg.schemes.clear_schemes()        
+                
+        #start with start scheme, or the most partitioned scheme if there isn't one
+        self.start_description = range(len(self.cfg.partitions))
+        start_scheme = scheme.create_scheme(self.cfg, 1, self.start_description)
+        log.info("Analysing starting scheme (scheme %s)" % start_scheme.name)
+        result = self.analyse_scheme(start_scheme, models)
+        
+        def get_score(my_result):
+            #TODO: this is bad. Should use self.cfg.model_selection, or write
+            #a new model_selection for scheme.py
+            if model_selection=="aic":
+                score=my_result.aic
+            elif model_selection=="aicc":
+                score=my_result.aicc
+            elif model_selection=="bic":
+                score=my_result.bic
+            else:
+                log.error("Unrecognised model_selection variable '%s', please check" %(score))
+                raise AnalysisError
+            return score
+
+        best_result = result
+        best_score  = get_score(result)
+        
+                
+        step = 1
+        cur_s = 2
+
+        #now we try out all neighbours of the current scheme, to see if we can find a better one
+        #and if we do, we just keep going
+        while True:
+            #get a list of all possible neighbours of the best_scheme
+            neighbours = algorithm.get_neighbours(self.start_description)
+
+            log.info("***Greedy algorithm step %d***" % step)
+            log.info("   *Current best score: %.2f" % best_score)
+            log.info("   *Current best scheme: %s" % self.start_description)
+            log.info("   *Number of models to analyse this step: %d" % len(neighbours))
+
+            #we shuffle neighbours, since this algorithm takes the first improvement
+            random.shuffle(neighbours)
+
+            #we reset the counters as we go, for better user information
+            self.total_scheme_num = len(neighbours)
+            self.schemes_analysed = 0
+
+            best_lumping_score = None
+            for lumped_description in neighbours:
+                #now get a schemes score if it's there, if not, analyse it first
+                lumped_scheme = scheme.check_if_scheme_exists(self.cfg, cur_s, lumped_description)
+                if lumped_scheme==False:
+                    lumped_scheme = scheme.create_scheme(self.cfg, cur_s, lumped_description)                    
+                cur_s += 1
+                result = self.analyse_scheme(lumped_scheme, models)
+                new_score = get_score(result)
+
+                if best_lumping_score==None or new_score < best_lumping_score:
+                    best_lumping_score  = new_score
+                    best_lumping_result = result
+                    best_lumping_scheme = lumped_scheme
+                    best_lumping_desc   = lumped_description
+                    if greediest==True:
+                        if best_lumping_score<best_score:
+                            break
+
+            if best_lumping_score < best_score:
+                best_scheme = best_lumping_scheme
+                best_score  = best_lumping_score
+                best_result = best_lumping_result
+                self.start_description = best_lumping_desc               
+                step += 1
+
+            else:
+                break
+
+        log.info("Greedy algorithm finished after %d steps" % step)
+        log.info("Highest scoring scheme is scheme %s, with %s score of %.3f"
+                 %(best_result.scheme.name, model_selection, best_score))
+
+        self.best_result = best_result
+
+
+    def report(self):
+        txt = "Best scheme according to Greedy algorithm, analysed with %s"
+        best = [(txt % self.cfg.model_selection, self.best_result)]
+        self.rpt.write_best_schemes(best)
+        self.rpt.write_all_schemes(self.results)
+        
+
+
+class GreedyAnalysis_old(Analysis):
 
     def do_analysis(self):
         '''A greedy algorithm for heuristic partitioning searches'''
