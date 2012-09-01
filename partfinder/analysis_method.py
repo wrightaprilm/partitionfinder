@@ -54,6 +54,7 @@ class GreedyAnalysis(Analysis):
     def do_analysis(self):
         '''A greedy algorithm for heuristic partitioning searches'''
         greediest=True
+        percent_todo = 10.0 #how much of the total number of schemes to look at each time
         log.info("Performing greediest analysis")
         models = self.cfg.models
         model_selection = self.cfg.model_selection
@@ -137,7 +138,9 @@ class GreedyAnalysis(Analysis):
                     best_lumping_desc   = lumped_description
                     if greediest==True:
                         if best_lumping_score<best_score:
-                            break
+                            print "%.2f/%.2f>%.2f?" %(self.schemes_analysed, self.total_scheme_num, percent_todo)
+                            if (float(self.schemes_analysed*100.0)/float(self.total_scheme_num))>percent_todo:
+                                break
 
             if best_lumping_score < best_score:
                 best_scheme = best_lumping_scheme
