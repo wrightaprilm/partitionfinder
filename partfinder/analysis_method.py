@@ -104,8 +104,10 @@ class GreedyAnalysis(Analysis):
         #and if we do, we just keep going
         while True:
             #get a list of all possible neighbours of the best_scheme
-            neighbours = algorithm.get_neighbours(self.start_description)
-
+            if greediest==True: 
+                neighbours = algorithm.get_neighbours(self.start_description)
+            else:
+                neighbours = algorithm.lumpings(self.start_description)
             log.info("***Greedy algorithm step %d***" % step)
             log.info("   *Current best score: %.2f" % best_score)
             log.info("   *Current best scheme: %s" % self.start_description)
