@@ -201,7 +201,7 @@ def analyse(model, alignment_path, tree_path, branchlengths):
         log.error("Unknown option for branchlengths: %s", branchlengths)
         raise PhymlError
 
-    command = "--run_id %s -b 0 -i '%s' -u '%s' %s %s " % (
+    command = "--run_id %s -b 0 -i '%s' -u '%s' %s %s --min_diff_lk_global=0.5 --min_diff_lk_local=0.1" % (
         model, alignment_path, tree_path, model_params, bl)
     run_phyml(command)
 
