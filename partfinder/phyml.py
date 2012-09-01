@@ -154,7 +154,7 @@ def make_branch_lengths(alignment_path, topology_path):
     log.debug("Copying %s to %s", topology_path, tree_path)
     dupfile(topology_path, tree_path)
 
-    command = "-i '%s' -u '%s' -m GTR -c 4 -a e -v e -o lr -b 0" % (
+    command = "-i '%s' -u '%s' -m GTR -c 4 -a e -v e -o lr -b 0 --min_diff_lk_global=0.1 --min_diff_lk_local=0.01" % (
         alignment_path, tree_path)
     run_phyml(command)
 
@@ -172,7 +172,7 @@ def make_branch_lengths_protein(alignment_path, topology_path):
     log.debug("Copying %s to %s", topology_path, tree_path)
     dupfile(topology_path, tree_path)
 
-    command = "-i '%s' -u '%s' -m LG -c 1 -v 0 -f m -d aa -o lr -b 0" % (
+    command = "-i '%s' -u '%s' -m LG -c 1 -v 0 -f m -d aa -o lr -b 0 --min_diff_lk_global=0.5 --min_diff_lk_local=0.1" % (
         alignment_path, tree_path)
     run_phyml(command)
 
@@ -201,7 +201,7 @@ def analyse(model, alignment_path, tree_path, branchlengths):
         log.error("Unknown option for branchlengths: %s", branchlengths)
         raise PhymlError
 
-    command = "--run_id %s -b 0 -i '%s' -u '%s' %s %s" % (
+    command = "--run_id %s -b 0 -i '%s' -u '%s' %s %s " % (
         model, alignment_path, tree_path, model_params, bl)
     run_phyml(command)
 
