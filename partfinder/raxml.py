@@ -34,7 +34,7 @@ if sys.platform == 'win32':
     _binary_name += ".exe"
 
 from util import PartitionFinderError
-class PhymlError(PartitionFinderError):
+class raxmlError(PartitionFinderError):
     pass
 
 #todo we should move find_program to somewhere more sensible like util.py
@@ -127,27 +127,25 @@ def make_branch_lengths(alignment_path, topology_path, datatype):
 def analyse(model, alignment_path, tree_path, branchlengths):
     """Do the analysis -- this will overwrite stuff!"""
 
-    # Move it to a new name to stop phyml stomping on different model analyses
+    # Move it to a new name to stop raxml stomping on different model analyses
     # dupfile(alignment_path, analysis_path)
     model_params = get_model_commandline(model)
 
     if branchlengths == 'linked':
         #constrain all branchlengths to be equal
-        bl = ' --constrained_lens '
+        bl = ' -f B '
     elif branchlengths == 'unlinked':
         #let branchlenghts vary among subsets
-        bl = ''
+        bl = ' -f e '
     else:
         # WTF?
         log.error("Unknown option for branchlengths: %s", branchlengths)
         raise PhymlError
 
-    command = "--run_id %s -b 0 -i '%s' -u '%s' %s %s" % (
-        model, alignment_path, tree_path, model_params, bl)
-    run_phyml(command)
+    command = " %s -s '%s' -t '%s' %s -n %s" % (
+        bl, alignment_path, tree_path, model_params, model)
+    run_raxml(command)
 
-    # Now get rid of this -- we have the original elsewhere
-    # os.remove(analysis_path)
 
 def make_tree_path(alignment_path):
     dir, aln = os.path.split(alignment_path)
