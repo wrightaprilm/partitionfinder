@@ -142,10 +142,17 @@ def analyse(model, alignment_path, tree_path, branchlengths):
         log.error("Unknown option for branchlengths: %s", branchlengths)
         raise PhymlError
 
+    #raxml doesn't append alignment names automatically, like PhyML, let's do that here
+    analysis_ID = raxml_analysis_ID(alignment_path, model)
     command = " %s -s '%s' -t '%s' %s -n %s" % (
-        bl, alignment_path, tree_path, model_params, model)
+        bl, alignment_path, tree_path, model_params, analysis_ID)
     run_raxml(command)
 
+def raxml_analysis_ID(alignment_path, model):
+    dir, file = os.path.split(alignment_path)
+    aln_name =  os.path.splitext(file)[0]
+    analysis_ID = '%s_%s.txt' %(aln_name, model)
+    return analysis_ID
 
 def make_tree_path(alignment_path):
     dir, aln = os.path.split(alignment_path)
@@ -153,10 +160,9 @@ def make_tree_path(alignment_path):
     return tree_path
 
 def make_output_path(aln_path, model):
-    # analyse_path = os.path.join(root_path, name + ".phy")
-    dir, file = os.path.split(aln_path)
-    stats_path = "RAxML_info.BLTREE" % (pth, model)
-    tree_path = "%s.phy_phyml_tree_%s.txt" % (pth, model)
+    analysis_ID = raxml_analysis_ID(alignment_path, model)
+    stats_path = "%sRAxML_info.%s" % (dir, analysis_ID)
+    tree_path = "%sRAxML_result.%s" % (pth, model)
     return stats_path, tree_path
 
 class PhymlResult(object):
