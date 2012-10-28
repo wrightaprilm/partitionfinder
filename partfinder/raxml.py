@@ -152,10 +152,10 @@ def make_tree_path(alignment_path):
     tree_path = os.path.join(dir, "RAxML_parsimonyTree.MPTREE")
     return tree_path
 
-def make_output_path(sub_path, model):
+def make_output_path(aln_path, model):
     # analyse_path = os.path.join(root_path, name + ".phy")
-    pth, ext = os.path.splitext(sub_path)
-    stats_path = "%s.phy_phyml_stats_%s.txt" % (pth, model)
+    dir, file = os.path.split(aln_path)
+    stats_path = "RAxML_info.BLTREE" % (pth, model)
     tree_path = "%s.phy_phyml_tree_%s.txt" % (pth, model)
     return stats_path, tree_path
 
