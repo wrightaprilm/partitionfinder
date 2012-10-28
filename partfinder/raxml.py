@@ -180,12 +180,12 @@ class Parser(object):
 
         OB = Suppress("(")
         CB = Suppress(")")
-        LNL_LABEL = Literal("Log-likelihood:")
-        TIME_LABEL = Literal("Time used:")
+        LNL_LABEL = Literal("Final GAMMA  likelihood:")
+        TIME_LABEL = Literal("Overall Time for Tree Evaluation")
         HMS = Word(nums + "hms") # A bit rough...
 
         lnl = (LNL_LABEL + FLOAT("lnl"))
-        time = (TIME_LABEL + HMS("time") + OB + INTEGER("seconds") + Suppress("seconds") + CB)
+        time = (TIME_LABEL + FLOAT("time"))
 
         # Shorthand...
         def nextbit(label, val):
@@ -193,8 +193,8 @@ class Parser(object):
 
         # Just look for these things
         self.root_parser = \
-                nextbit(LNL_LABEL, lnl) +\
-                nextbit(TIME_LABEL, time)
+                nextbit(TIME_LABEL, time) +\
+                nextbit(LNL_LABEL, lnl)
 
     def parse(self, text):
         # log.info("Parsing phyml output...")
