@@ -90,8 +90,8 @@ def main(name, version, datatype):
         action="store_true", dest="show_python_exceptions",
         help="If errors occur, print the python exceptions")
     parser.add_option(
-        "--save-phyml",
-        action="store_true", dest="save_phyml",
+        "--save-phlyofiles",
+        action="store_true", dest="save_phylofiles",
         help="save all of the phyml output. This can take a lot of space(!)")
     parser.add_option(
         "--dump-results",
@@ -152,7 +152,7 @@ def main(name, version, datatype):
             rpt = reporter.TextReporter(cfg)
             anal = method(cfg, rpt, 
                           options.force_restart, 
-                          options.save_phyml,
+                          options.save_phylofiles,
                           options.processes)
             results = anal.analyse()
 

@@ -39,14 +39,14 @@ class Analysis(object):
     """Performs the analysis and collects the results"""
     def __init__(self, cfg, rpt, 
                  force_restart=False, 
-                 save_phyml=False,
+                 save_phylofiles=False,
                  threads=-1):
         cfg.validate()
 
         self.cfg = cfg
         self.rpt = rpt
         self.threads = threads
-        self.save_phyml = save_phyml
+        self.save_phlofiles = save_phylofiles
         self.results = results.AnalysisResults()
 
         log.info("Beginning Analysis")
@@ -288,7 +288,7 @@ class Analysis(object):
                     
                     # Just used for below
                     models_done.append(m)
-                    if self.save_phyml:
+                    if self.save_phylofiles:
                         pass
                     else:
                         os.remove(stats_path)
