@@ -165,13 +165,13 @@ def make_output_path(aln_path, model):
     tree_path = "%sRAxML_result.%s" % (pth, model)
     return stats_path, tree_path
 
-class PhymlResult(object):
+class raxmlResult(object):
     def __init__(self, lnl, seconds):
         self.lnl = lnl
         self.seconds = seconds
 
     def __str__(self):
-        return "PhymlResult(lnl:%s, secs:%s)" % (self.lnl, self.seconds) 
+        return "RAxMLResult(lnl:%s, secs:%s)" % (self.lnl, self.seconds) 
 
 class Parser(object):
     def __init__(self):
