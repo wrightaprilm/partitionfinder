@@ -99,7 +99,12 @@ def get_DNA_models_gammaI():
 def get_all_DNA_models():
     model_list = get_DNA_models_gamma() + get_DNA_models_gammaI()
     return model_list
- 
+
+@memoize
+def get_all_models():
+    model_list = get_all_DNA_models() + get_all_protein_models()
+    return model_list
+
 @memoize
 def get_model_commandline(modelstring):
     '''

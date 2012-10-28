@@ -230,7 +230,7 @@ spp4     CTCGAGGTGAAAAATGGTGATGCT------CGTCTGGTGCTGGAAGTTCAGCAGCAGCTGGGTGGTGGCGT
     tree_path = make_tree(pth)
     log.info("Tree is %s:", open(tree_path).read())
 
-    for model in phyml_models.get_all_models():
+    for model in raxml_models.get_all_models():
         log.info("Analysing using model %s:" % model)
         out_pth = analyse(model, pth, tree_path)
         output = open(out_pth, 'rb').read()
