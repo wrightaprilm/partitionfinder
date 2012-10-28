@@ -212,9 +212,9 @@ def make_tree_path(alignment_path):
     pth, ext = os.path.splitext(alignment_path)
     return pth + ".phy_phyml_tree.txt"
 
-def make_output_path(sub_path, model):
+def make_output_path(aln_path, model):
     # analyse_path = os.path.join(root_path, name + ".phy")
-    pth, ext = os.path.splitext(sub_path)
+    pth, ext = os.path.splitext(aln_path)
     stats_path = "%s.phy_phyml_stats_%s.txt" % (pth, model)
     tree_path = "%s.phy_phyml_tree_%s.txt" % (pth, model)
     return stats_path, tree_path
