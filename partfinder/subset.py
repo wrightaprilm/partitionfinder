@@ -16,8 +16,7 @@
 #agree with those licences and conditions as well.
 
 import logging
-log = logging.getLogger("analysis")
-
+log = logging.getLogger("subset")
 import os
 import weakref
 
@@ -126,7 +125,7 @@ class Subset(object):
     def add_model_result(self, model, result):
         result.model = model
         result.params = phyml_models.get_num_params(model)
-    
+
         K = float(result.params)
         n = float(len(self.columnset))
         lnL = float(result.lnl)
@@ -147,10 +146,7 @@ class Subset(object):
         result.bic  = (-2.0*lnL) + (K * logarithm(n))
         result.aicc = (-2.0*lnL) + ((2.0*K)*(n/(n-K-1.0)))
 
-        #this is the rate per site of the model - used in some clustering analyses
-        result.site_rate = float(result.tree_size)
-
-        log.debug("Adding model to subset. Model: %s, params %d, site_rate %f" %(model, K, result.site_rate))
+        log.debug("Adding model to subset. Model: %s, params %d" %(model, K))
 
         if model in self.results:
             log.error("Can't add model result %s, it already exists in %s",
@@ -178,17 +174,7 @@ class Subset(object):
                 self.best_info_score = info_score
                 self.best_model = result.model
                 self.best_params = result.params
-                self.best_site_rate = result.site_rate
-        log.debug("Model Selection. best model: %s, params: %d, site_rate: %f" %(self.best_model, self.best_params, self.best_site_rate))
-
-    def get_param_values(self):
-        param_values =[]
-        
-        #add any parameters you want to this list
-        param_values.append(self.best_site_rate)
-        
-        return param_values
-        
+        log.debug("Model Selection. best model: %s, params: %d" %(self.best_model, self.best_params))
 
     # These are the fields that get stored for quick loading
     _cache_fields = "alignment_path results".split()

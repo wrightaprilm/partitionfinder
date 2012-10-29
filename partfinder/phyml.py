@@ -220,13 +220,12 @@ def make_output_path(aln_path, model):
     return stats_path, tree_path
 
 class PhymlResult(object):
-    def __init__(self, lnl, tree_size, seconds):
+    def __init__(self, lnl, seconds):
         self.lnl = lnl
-        self.tree_size = tree_size
         self.seconds = seconds
 
     def __str__(self):
-        return "PhymlResult(lnl:%s, tree_size:%s, secs:%s)" % (self.lnl, self.tree_size, self.seconds) 
+        return "PhymlResult(lnl:%s, secs:%s)" % (self.lnl, self.seconds) 
 
 class Parser(object):
     def __init__(self):
@@ -236,16 +235,12 @@ class Parser(object):
         OB = Suppress("(")
         CB = Suppress(")")
         LNL_LABEL = Literal("Log-likelihood:")
-        TREE_SIZE_LABEL = Literal("Tree size:")
         TIME_LABEL = Literal("Time used:")
         HMS = Word(nums + "hms") # A bit rough...
-        
 
         lnl = (LNL_LABEL + FLOAT("lnl"))
-        tree_size = (TREE_SIZE_LABEL + FLOAT("tree_size"))
         time = (TIME_LABEL + HMS("time") + OB + INTEGER("seconds") + Suppress("seconds") + CB)
 
-        
         # Shorthand...
         def nextbit(label, val):
             return Suppress(SkipTo(label)) + val
@@ -253,7 +248,6 @@ class Parser(object):
         # Just look for these things
         self.root_parser = \
                 nextbit(LNL_LABEL, lnl) +\
-                nextbit(TREE_SIZE_LABEL, tree_size) +\
                 nextbit(TIME_LABEL, time)
 
     def parse(self, text):
@@ -264,12 +258,7 @@ class Parser(object):
             log.error(str(p))
             raise PhymlError
 
-        log.debug("Parsed LNL:  %s" %tokens.lnl)
-        log.debug("Parsed RATE: %s" %tokens.tree_size)
-        log.debug("Parsed TIME: %s" %tokens.time)
-
-
-        return PhymlResult(lnl=tokens.lnl, tree_size=tokens.tree_size, seconds=tokens.seconds)
+        return PhymlResult(lnl=tokens.lnl, seconds=tokens.seconds)
 
 # Stateless, so safe for use across threads. HMMMM, REALLY?
 the_parser = Parser()
@@ -292,14 +281,13 @@ spp4     CTCGAGGTGAAAAATGGTGATGCT------CGTCTGGTGCTGGAAGTTCAGCAGCAGCTGGGTGGTGGCGT
     tmp = tempfile.mkdtemp()
     pth = os.path.join(tmp, 'test.phy')
     alignment.write(pth)
-    tree_path = make_topology(pth, "DNA")
+    tree_path = make_tree(pth)
     log.info("Tree is %s:", open(tree_path).read())
 
     for model in phyml_models.get_all_models():
         log.info("Analysing using model %s:" % model)
-        analyse(model, pth, tree_path, "linked")
-        stats_pth, tree_pth = make_output_path(pth, model)
-        output = open(stats_pth, 'rb').read()
+        out_pth = analyse(model, pth, tree_path)
+        output = open(out_pth, 'rb').read()
         res = parse(output)
         log.info("Result is %s", res)
 
