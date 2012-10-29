@@ -49,13 +49,16 @@ class Analysis(object):
         self.threads = threads
         self.save_phylofiles = save_phylofiles
         self.results = results.AnalysisResults()
+    
 
         #TODO this is very ugly, it would liek to be prettier
         if phylogeny_program=='phyml' or phylogeny_program==-1:
             self.processor = phyml
+            self.models = phyml_models
             self.get_model_difficulty = phyml_models.get_model_difficulty
         elif phylogeny_program=='raxml':
             self.processor = raxml
+            self.models = raxml_models
             self.get_model_difficulty = raxml_models.get_model_difficulty
         else:
             log.error("Unrecognised option %s for phylogeny program, only PhyML and RAxML are "
@@ -292,7 +295,7 @@ class Analysis(object):
                 # Annotate with the parameters of the model
                 try:
                     result = self.processor.parse(sub_output)
-                    sub.add_model_result(m, result)
+                    sub.add_model_result(m, result, self.models)
                     # Remove the current model from remaining ones
                     models_to_do.remove(m)
                     
