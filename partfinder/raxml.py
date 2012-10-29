@@ -33,7 +33,7 @@ _binary_name = 'raxml'
 if sys.platform == 'win32':
     _binary_name += ".exe"
 
-from util import PartitionFinderError
+from util import PhylogenyProgramError
 class RaxmlError(PhylogenyProgramError):
     pass
 
