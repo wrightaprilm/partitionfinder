@@ -32,7 +32,7 @@ class Configuration(object):
     options = {
         'branchlengths': ['linked', 'unlinked'],
         'model_selection': ['aic', 'aicc', 'bic'],
-        'search': ['all', 'user', 'greedy']
+        'search': ['all', 'user', 'greedy', 'clustering']
         }
 
     def __init__(self, datatype="DNA"):
@@ -143,7 +143,8 @@ class Configuration(object):
         handler.setLevel(logging.DEBUG)
         logging.getLogger("").addHandler(handler)
         logging.getLogger("analysis").addHandler(handler)
-        #logging.getLogger("alignment").addHandler(handler)
+        logging.getLogger("alignment").addHandler(handler)
+        logging.getLogger("subset").addHandler(handler)
 
     def load(self, config_path):
         """We get the parser to construct the configuration"""

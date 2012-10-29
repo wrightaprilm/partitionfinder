@@ -7,6 +7,21 @@ import algorithm
 import submodels
 from analysis import Analysis, AnalysisError
 
+def get_score(my_result, model_selection):
+    #TODO: this is bad. Should use self.cfg.model_selection, or write
+    #a new model_selection for scheme.py
+    if model_selection=="aic":
+        score=my_result.aic
+    elif model_selection=="aicc":
+        score=my_result.aicc
+    elif model_selection=="bic":
+        score=my_result.bic
+    else:
+        log.error("Unrecognised model_selection variable '%s', please check" %(score))
+        raise AnalysisError
+    return score
+
+
 class UserAnalysis(Analysis):
 
     def do_analysis(self):
@@ -22,6 +37,59 @@ class UserAnalysis(Analysis):
             log.error("Search set to 'user', but no user schemes detected in .cfg file. Please check.")
             raise AnalysisError
 
+class ClusteringAnalysis(Analysis):
+    """This analysis uses model parameters to guess at similar partitions, then just joins them together
+        this is much less accurate than other methods, but a LOT quicker - it runs in order
+        N time (where N is the number of initial datablocks), whereas the greedy algorithm is
+        still N squared.
+    """
+    
+    def do_analysis(self):
+        log.info("Performing clustering analysis")
+    
+        models = self.cfg.models
+        model_selection = self.cfg.model_selection
+        partnum = len(self.cfg.partitions)
+        self.total_subset_num = 2*partnum-1
+        self.total_scheme_num = partnum
+
+        #start with the scheme with all subsets separate
+        #analyse that scheme
+        #clear any schemes that are currently loaded
+        # TODO Not sure we need this...
+        self.cfg.schemes.clear_schemes()        
+                
+        #start with the most partitioned scheme
+        start_description = range(len(self.cfg.partitions))
+        start_scheme = scheme.create_scheme(self.cfg, 1, start_description)
+        log.info("Analysing starting scheme (scheme %s)" % start_scheme.name)
+        result = self.analyse_scheme(start_scheme, models)
+        
+        best_result = result
+        best_score  = get_score(result, self.cfg.model_selection)
+                         
+        cur_s = 2
+
+        #now we try out all clusterings of the first scheme, to see if we can find a better one
+        while True:
+            log.info("***Clustering algorithm step %d of %d***" %(cur_s-1, partnum-1))
+                                        
+            #calculate the subsets which are most similar
+            #e.g. combined rank ordering of euclidean distances
+            #could combine average site-rates, q matrices, and frequencies
+            clustered_scheme = start_scheme.get_clustering(self.cfg, method='hierarchical', scheme_name = cur_s)
+            
+            #now analyse that new scheme
+            cur_s += 1
+            result = self.analyse_scheme(clustered_scheme, models)
+            
+            #stop when we've anlaysed the scheme with all subsets combined
+            if len(set(clustered_scheme.subsets)) == 1: #then it's the scheme with everything together
+                break
+            else:
+                start_scheme = clustered_scheme
+                                
+                
 class AllAnalysis(Analysis):
 
     def do_analysis(self):
@@ -55,7 +123,6 @@ class GreedyAnalysis(Analysis):
         '''A greedy algorithm for heuristic partitioning searches'''
         log.info("Performing greedy analysis")
         models = self.cfg.models
-        model_selection = self.cfg.model_selection
         partnum = len(self.cfg.partitions)
 
         self.total_scheme_num = submodels.count_greedy_schemes(partnum)
@@ -78,22 +145,8 @@ class GreedyAnalysis(Analysis):
         log.info("Analysing starting scheme (scheme %s)" % start_scheme.name)
         result = self.analyse_scheme(start_scheme, models)
         
-        def get_score(my_result):
-            #TODO: this is bad. Should use self.cfg.model_selection, or write
-            #a new model_selection for scheme.py
-            if model_selection=="aic":
-                score=my_result.aic
-            elif model_selection=="aicc":
-                score=my_result.aicc
-            elif model_selection=="bic":
-                score=my_result.bic
-            else:
-                log.error("Unrecognised model_selection variable '%s', please check" %(score))
-                raise AnalysisError
-            return score
-
         best_result = result
-        best_score  = get_score(result)
+        best_score  = get_score(result, self.cfg.model_selection)
                          
         step = 1
         cur_s = 2
@@ -112,10 +165,11 @@ class GreedyAnalysis(Analysis):
 
             best_lumping_score = None
             for lumped_description in lumpings:
+                print lumped_description
                 lumped_scheme = scheme.create_scheme(self.cfg, cur_s, lumped_description)
                 cur_s += 1
                 result = self.analyse_scheme(lumped_scheme, models)
-                new_score = get_score(result)
+                new_score = get_score(result, self.cfg.model_selection)
 
                 if best_lumping_score==None or new_score < best_lumping_score:
                     best_lumping_score  = new_score
@@ -137,7 +191,7 @@ class GreedyAnalysis(Analysis):
 
         log.info("Greedy algorithm finished after %d steps" % step)
         log.info("Highest scoring scheme is scheme %s, with %s score of %.3f"
-                 %(best_result.scheme.name, model_selection, best_score))
+                 %(best_result.scheme.name, self.cfg.model_selection, best_score))
 
         self.best_result = best_result
 
@@ -155,6 +209,8 @@ def choose_method(search):
         method = UserAnalysis
     elif search == 'greedy':
         method = GreedyAnalysis
+    elif search == 'clustering':
+        method = ClusteringAnalysis
     else:
         log.error("Search algorithm '%s' is not yet implemented", search)
         raise AnalysisError
