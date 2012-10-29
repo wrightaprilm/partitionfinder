@@ -24,22 +24,22 @@ import config
 
 # number of free parameters in substitution model, listed as "model+base_frequencies"
 _base_models = {
-    "GTR"   :   5+3
+    "GTR"   :   (5+3, "")
 }
 
 # number of free parameters in substitution model, listed as "aa_frequencies"
 _base_protein_models = {
-    "DAYHOFF"   :   0,
-    "DCMUT"     :   0,
-    "JTT"       :   0,
-    "MTREV"     :   0,
-    "WAG"       :   0,
-    "RTREV"     :   0,
-    "CPREV"     :   0,
-    "VT"        :   0,
-    "BLOSUM62"  :   0,
-    "MTMAM"     :   0,
-    "LG"        :   0,
+    "DAYHOFF"   :   (0, ""),
+    "DCMUT"     :   (0, ""),
+    "JTT"       :   (0, ""),
+    "MTREV"     :   (0, ""),
+    "WAG"       :   (0, ""),
+    "RTREV"     :   (0, ""),
+    "CPREV"     :   (0, ""),
+    "VT"        :   (0, ""),
+    "BLOSUM62"  :   (0, ""),
+    "MTMAM"     :   (0, ""),
+    "LG"        :   (0, ""),
  }
 
 # All the functions in here return the same thing with the same parameters, 
@@ -80,7 +80,7 @@ def get_all_protein_models():
     return model_list
 
 @memoize
-def get_DNA_models_gamma():
+def get_dna_models_gamma():
     '''
     Just one model in RAxML with +G.
     '''
@@ -88,7 +88,7 @@ def get_DNA_models_gamma():
     return model_list
 
 @memoize
-def get_DNA_models_gammaI():
+def get_dna_models_gammaI():
     '''
     Just one model in RAxML with I+G.
     '''
@@ -96,8 +96,8 @@ def get_DNA_models_gammaI():
     return model_list
 
 @memoize
-def get_all_DNA_models():
-    model_list = get_DNA_models_gamma() + get_DNA_models_gammaI()
+def get_all_dna_models():
+    model_list = get_dna_models_gamma() + get_dna_models_gammaI()
     return model_list
 
 @memoize
@@ -140,9 +140,9 @@ def get_num_params(modelstring):
     elements = modelstring.split("+")
     model_name = elements[0]
     if model_name in _base_models.keys():
-        model_params = _base_models[model_name]
+        model_params = _base_models[model_name][0]
     else:
-        model_params = _base_protein_models[model_name]
+        model_params = _base_protein_models[model_name][0]
         if "F" in elements[1:]:
             model_params = model_params+19-1 #the -1 here is to account for the fact we add 1 for the + in '+F' below
     
