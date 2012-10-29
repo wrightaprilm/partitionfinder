@@ -35,7 +35,7 @@ class Configuration(object):
         'search': ['all', 'user', 'greedy']
         }
 
-    def __init__(self, datatype="DNA"):
+    def __init__(self, datatype="DNA", phylogeny_program='phyml'):
         self.partitions = partition.PartitionSet()
         self.schemes = scheme.SchemeSet()
 
@@ -49,6 +49,13 @@ class Configuration(object):
 
         log.info("Setting datatype to '%s'", datatype)
         self.datatype = datatype
+
+        if phylogeny_program != "phyml" and phylogeny_program != "raxml":
+            log.error("Phylogeny program must be 'phyml' or 'raxml'")
+            raise ConfigurationError
+
+        log.info("Setting phylogeny program to '%s'", phylogeny_program)
+        self.phylogeny_program = phylogeny_program
 
 
         # Set the defaults into the class. These can be reset by calling
@@ -220,6 +227,7 @@ class Configuration(object):
         cfg_list = [self.alignment, 
                     self.branchlengths,
                     self.partitions.partitions,
+                    self.phylogeny_program,
                     topology]
     
         #we need to know if there's anything in the subsets folder
@@ -273,6 +281,9 @@ class Configuration(object):
                     fail.append("[data_blocks]")
 
                 if not old_cfg[3]==cfg_list[3]:
+                    fail.append("phylogeny_program (the --raxml commandline option)")
+
+                if not old_cfg[4]==cfg_list[4]:
                     fail.append("user_tree_topology")
                 
                 if len(fail)>0:
