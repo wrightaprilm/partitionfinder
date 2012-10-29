@@ -92,7 +92,7 @@ def main(name, version, datatype):
     parser.add_option(
         "--save-phlyofiles",
         action="store_true", dest="save_phylofiles",
-        help="save all of the phyml output. This can take a lot of space(!)")
+        help="save all of the phyml or raxml output. This can take a lot of space(!)")
     parser.add_option(
         "--dump-results",
         action="store_true", dest="dump_results",
@@ -103,8 +103,21 @@ def main(name, version, datatype):
         action="store_true", dest="compare_results",
         help="Compare the results to previously dumped binary results. "
         "This is only of use for testing purposes.")
+    parser.add_option(
+        "--raxml",
+        action="store_true", dest="use_raxml",
+        help="Use RAxML (rather than PhyML) to do the analysis. See the manual"
+        )
+
+    
     
     options, args = parser.parse_args()
+
+    #default to phyml
+    if options.use_raxml==1:
+        options.phylogeny_program = 'raxml'
+    else:
+        options.phylogeny_program = 'phyml'
 
     # Error checking
     if options.dump_results and options.compare_results:
@@ -134,7 +147,7 @@ def main(name, version, datatype):
 
     # Load, using the first argument as the folder
     try:
-        cfg = config.Configuration(datatype)
+        cfg = config.Configuration(datatype, options.phylogeny_program)
         cfg.load_base_path(args[0])
                 
         if options.check_only:
@@ -153,6 +166,7 @@ def main(name, version, datatype):
             anal = method(cfg, rpt, 
                           options.force_restart, 
                           options.save_phylofiles,
+                          options.phylogeny_program,
                           options.processes)
             results = anal.analyse()
 
