@@ -26,7 +26,7 @@ from pyparsing import (
 # debugging
 # ParserElement.verbose_stacktrace = True
 
-import partition, scheme, subset, phyml_models, config
+import partition, scheme, subset, phyml_models, raxml_models, config
 from util import PartitionFinderError
 
 # Only used internally
@@ -159,52 +159,62 @@ class Parser(object):
 
         
     def set_models(self, text, loc, tokens):
-        all_mods            = set(phyml_models.get_all_models())
-        all_protein_mods    = set(phyml_models.get_all_protein_models())
-        total_mods          = all_mods.union(all_protein_mods)
+        if self.cfg.phylogeny_program == "phyml":
+            self.phylo_models = phyml_models
+        elif self.cfg.phylogeny_program =="raxml":
+            self.phylo_models = raxml_models
+
+        all_dna_mods        = set(self.phylo_models.get_all_dna_models())
+        all_protein_mods    = set(self.phylo_models.get_all_protein_models())
+        total_mods          = all_dna_mods.union(all_protein_mods)
+        
         mods = tokens[1]
         DNA_mods  = 0
         prot_mods = 0
         if mods.userlist:
-            self.cfg.models = []
-            # It is a list of models
-            for m in mods.userlist:
-                
-                if m not in total_mods:
-                    raise ParserError(
-                        text, loc, "'%s' is not a valid model" % m)
-                
-                if m in all_mods:
-                    DNA_mods  = DNA_mods + 1
-                if m in all_protein_mods:
-                    prot_mods = prot_mods + 1                    
-                
-                self.cfg.models.append(m)
-            log.info("Setting 'models' to a userlist containing: %s", 
-                      ", ".join(self.cfg.models))
-            
+            modlist = mods.userlist
+            log.info("Setting 'models' to a user-specified list")           
         else:
             modsgroup = mods.predefined
             if modsgroup.lower() == "all":
-                self.cfg.models = list(all_mods)
+                modlist = list(all_dna_mods)
                 DNA_mods = DNA_mods + 1
             elif modsgroup.lower() == "mrbayes":
-                mrbayes_mods = set(phyml_models.get_mrbayes_models())
-                self.cfg.models = list(mrbayes_mods)
+                modlist = set(phyml_models.get_mrbayes_models())
                 DNA_mods = DNA_mods + 1
             elif modsgroup.lower() == "beast":
-                beast_mods = set(phyml_models.get_beast_models())
-                self.cfg.models = list(beast_mods)
+                modlist = set(phyml_models.get_beast_models())
                 DNA_mods = DNA_mods + 1
             elif modsgroup.lower() == "raxml":
-                self.cfg.models = phyml_models.get_raxml_models()
+                modlist = phyml_models.get_raxml_models()
                 DNA_mods = DNA_mods + 1
             elif modsgroup.lower() == "all_protein":
-                self.cfg.models = phyml_models.get_all_protein_models()
+                modlist = self.phylo_models.get_all_protein_models()
                 prot_mods = prot_mods + 1
             else:
                 pass
             log.info("Setting 'models' to '%s'", modsgroup)
+
+        
+        self.cfg.models = []
+        for m in modlist:
+            if m not in total_mods:
+                raise ParserError(
+                    text, loc, "'%s' is not a valid model for phylogeny " 
+                               "program %s. Please check the lists of valid models in the"
+                               " manual and try again" %(m, self.cfg.phylogeny_program))
+            
+            if m in all_dna_mods:
+                DNA_mods  = DNA_mods + 1
+            if m in all_protein_mods:
+                prot_mods = prot_mods + 1                    
+            
+            self.cfg.models.append(m)
+
+        log.info("Setting 'models' to a list containing: %s", 
+                  ", ".join(self.cfg.models))
+
+
 
         #check datatype against the model list that we've got a sensible model list
         if DNA_mods>0 and prot_mods==0 and self.cfg.datatype=="DNA":
