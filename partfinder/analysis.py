@@ -23,8 +23,8 @@ log = logging.getLogger("analysis")
 import os, shutil
 
 from alignment import Alignment, SubsetAlignment
-import phyml
-import raxml
+import phyml, phyml_models
+import raxml, raxml_models
 import threadpool
 import scheme
 import subset
@@ -47,16 +47,19 @@ class Analysis(object):
         self.cfg = cfg
         self.rpt = rpt
         self.threads = threads
-        self.save_phlofiles = save_phylofiles
+        self.save_phylofiles = save_phylofiles
         self.results = results.AnalysisResults()
 
-        if phylogeny_program=='phyml':
+        #TODO this is very ugly, it would liek to be prettier
+        if phylogeny_program=='phyml' or phylogeny_program==-1:
             self.processor = phyml
+            self.get_model_difficulty = phyml_models.get_model_difficulty
         elif phylogeny_program=='raxml':
             self.processor = raxml
+            self.get_model_difficulty = raxml_models.get_model_difficulty
         else:
-            log.error("Unrecognised option for phylogeny program, only PhyML and RAxML are "
-                      "currently supported")
+            log.error("Unrecognised option %s for phylogeny program, only PhyML and RAxML are "
+                      "currently supported" % phylogeny_program)
             raise AnalysisError
             
         log.info("Beginning Analysis")
@@ -245,7 +248,7 @@ class Analysis(object):
         #for efficiency, we rank the models by their difficulty - most difficult first
         difficulty = []        
         for m in models_to_do:
-            difficulty.append(self.processor.get_model_difficulty(m))
+            difficulty.append(self.get_model_difficulty(m))
         
         #hat tip to http://scienceoss.com/sort-one-list-by-another-list/
         difficulty_and_m = zip(difficulty, models_to_do)
