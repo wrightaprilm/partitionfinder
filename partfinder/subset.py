@@ -28,7 +28,7 @@ from hashlib import md5
 import cPickle as pickle
 
 import alignment
-import phyml_models
+import phyml_models, raxml_models
 
 from math import log as logarithm
 
@@ -122,10 +122,10 @@ class Subset(object):
     def __iter__(self):
         return iter(self.partitions)
 
-    def add_model_result(self, model, result):
+    def add_model_result(self, model, result, models):
         result.model = model
-        result.params = phyml_models.get_num_params(model)
-
+        result.params = models.get_num_params(model)
+            
         K = float(result.params)
         n = float(len(self.columnset))
         lnL = float(result.lnl)
@@ -166,7 +166,7 @@ class Subset(object):
             elif method=="BIC" or method=="bic":
                 info_score = result.bic
             else:
-                log.error("Model selection option %s not recognised, please check", method)
+                log.error("Model selection option %s not recognised, please check" % method)
                 raise SubsetError
 		
             if self.best_info_score is None or info_score < self.best_info_score:
