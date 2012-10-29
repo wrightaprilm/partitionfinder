@@ -111,7 +111,7 @@ def make_topology(alignment_path, datatype):
 
     #force raxml to write to the dir with the alignment in it
     aln_dir, fname = os.path.split(alignment_path)
-    command = ''.join([command, " -w '%s'" % os.abspath(aln_dir)])
+    command = ''.join([command, " -w '%s'" % os.path.abspath(aln_dir)])
 
     run_raxml(command)
     output_path = make_tree_path(alignment_path)
@@ -127,12 +127,12 @@ def make_branch_lengths(alignment_path, topology_path, datatype):
     if datatype=="DNA":
         log.info("Estimating GTR+G branch lengths on tree using RAxML")
         command = "-f e -s '%s' -t '%s' -m GTRGAMMA -n BLTREE -w '%s'" % (
-            alignment_path, tree_path, os.abspath(dir_path))
+            alignment_path, tree_path, os.path.abspath(dir_path))
         run_raxml(command)
     if datatype=="protein":
         log.info("Estimating LG+G branch lengths on tree using RAxML")
         command = "-f e -s '%s' -t '%s' -m PROTGAMMALG -n BLTREE -w '%s'" % (
-            alignment_path, tree_path, os.abspath(dir_path))
+            alignment_path, tree_path, os.path.abspath(dir_path))
         run_raxml(command)
 
     dir, aln = os.path.split(alignment_path)
@@ -166,7 +166,7 @@ def analyse(model, alignment_path, tree_path, branchlengths):
     #force raxml to write to the dir with the alignment in it
     aln_dir, fname = os.path.split(alignment_path)
     command = " %s -s '%s' -t '%s' %s -n %s -w '%s' " % (
-        bl, alignment_path, tree_path, model_params, analysis_ID, os.abspath(aln_dir))
+        bl, alignment_path, tree_path, model_params, analysis_ID, os.path.abspath(aln_dir))
     run_raxml(command)
 
 def raxml_analysis_ID(alignment_path, model):
