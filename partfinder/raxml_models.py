@@ -38,7 +38,7 @@ _base_protein_models = {
     "CPREV"     :   0,
     "VT"        :   0,
     "BLOSUM62"  :   0,
-    "MTMAMM"    :   0,
+    "MTMAM"     :   0,
     "LG"        :   0,
  }
 
