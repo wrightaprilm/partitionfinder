@@ -157,10 +157,7 @@ class Analysis(object):
                 topology_path = self.processor.make_topology(self.filtered_alignment_path, self.cfg.datatype)
 
             # Now estimate branch lengths
-            if self.cfg.datatype == "DNA":
-                tree_path = self.processor.make_branch_lengths(self.filtered_alignment_path, topology_path)
-            elif self.cfg.datatype == "protein":
-                tree_path = self.processor.make_branch_lengths_protein(self.filtered_alignment_path, topology_path)
+            tree_path = self.processor.make_branch_lengths(self.filtered_alignment_path, topology_path, self.cfg.datatype)
                 
         self.tree_path = tree_path
         log.info("Starting tree with branch lengths is here: %s", self.tree_path) 
