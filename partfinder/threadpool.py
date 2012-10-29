@@ -26,7 +26,7 @@ from time import sleep
 import sys, os
 
 # Catch these exceptions
-from phyml import PhymlError
+from phyml import PhylogenyProgramError
 
 # Taken from the multiprocessing library
 def cpu_count():
