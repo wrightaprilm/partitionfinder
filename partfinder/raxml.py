@@ -102,9 +102,9 @@ def make_topology(alignment_path, datatype):
 
     # First get the MP topology like this (-p is a hard-coded random number seed):
     if datatype=="DNA":
-        command = "-y -s %s -m GTRGAMMA -n MPTREE -p 123456789" % (alignment_path)
+        command = "-y -s '%s' -m GTRGAMMA -n MPTREE -p 123456789" % (alignment_path)
     elif datatype=="protein":
-        command = "-y -s %s -m PROTGAMMALG -n MPTREE -p 123456789" % (alignment_path)
+        command = "-y -s '%s' -m PROTGAMMALG -n MPTREE -p 123456789" % (alignment_path)
     else:
         log.error("Unrecognised datatype: '%s'" % (datatype))
         raise(PhylogenyProgramError)
