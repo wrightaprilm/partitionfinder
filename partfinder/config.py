@@ -270,6 +270,15 @@ class Configuration(object):
                 f.close()
                 fail = []
                 
+                if len(old_cfg) != len(cfg_list):
+                    log.error("Your old configuration doesn't match with your new one")
+                    log.error("The most common cause of this error is trying to run a half-finished analysis"
+                              " but switching PartitionFinder versions half way through")
+                    log.error("The solution is to either go back to the same version of PartitionFinder"
+                              " you used for the initial analysis, or to re-run the analysis using the "
+                              "--force-restart option at the command line. Note that this will delete "
+                              "all previous analyses in the '/analysis' folder")
+                
                 if not old_cfg[0]==cfg_list[0]:
                     fail.append("alignment")
                 if not old_cfg[1]==cfg_list[1]:
