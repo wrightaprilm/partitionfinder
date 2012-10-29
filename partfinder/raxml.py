@@ -37,8 +37,22 @@ from util import PartitionFinderError
 class raxmlError(PartitionFinderError):
     pass
 
-#todo we should move find_program to somewhere more sensible like util.py
-from phyml import find_program
+def find_program():
+    """Locate the binary ..."""
+    pth = os.path.abspath(__file__)
+
+    # Split off the name and the directory...
+    pth, notused = os.path.split(pth)
+    pth, notused = os.path.split(pth)
+    pth = os.path.join(pth, "programs", _binary_name)
+    pth = os.path.normpath(pth)
+
+    log.debug("Checking for program %s", _binary_name)
+    if not os.path.exists(pth) or not os.path.isfile(pth):
+        log.error("No such file: '%s'", pth)
+        raise raxmlError
+    log.debug("Found program %s at '%s'", _binary_name, pth)
+    return pth
 
 _raxml_binary = None
 def run_raxml(command):
@@ -83,21 +97,25 @@ def dupfile(src, dst):
         raise raxmlError
 
 def make_topology(alignment_path, datatype):
-	'''Make a MP tree to start the analysis'''
-	log.info("Making MP tree for %s", alignment_path)
+    '''Make a MP tree to start the analysis'''
+    log.info("Making MP tree for %s", alignment_path)
 
-	# First get the MP topology like this (-p is a hard-coded random number seed):
-	if datatype=="DNA":
-		command = "-y -s %s -m GTRGAMMA -n MPTREE -p 123456789" % (alignment_path)
-	elif datatype=="protein":
-		command = "-y -s %s -m PROTGAMMALG -n MPTREE -p 123456789" % (alignment_path)
-	else:
-		log.error("Unrecognised datatype: '%s'" % (datatype))
-		raise(raxmlError)
-		
-	run_raxml(command)
-	output_path = make_tree_path(alignment_path)
-	return output_path
+    # First get the MP topology like this (-p is a hard-coded random number seed):
+    if datatype=="DNA":
+        command = "-y -s %s -m GTRGAMMA -n MPTREE -p 123456789" % (alignment_path)
+    elif datatype=="protein":
+        command = "-y -s %s -m PROTGAMMALG -n MPTREE -p 123456789" % (alignment_path)
+    else:
+        log.error("Unrecognised datatype: '%s'" % (datatype))
+        raise(raxmlError)
+	
+    #force raxml to write to the dir with the alignment in it
+    aln_dir, fname = os.path.split(alignment_path)
+    command = ''.join([command, " -w '%s'" % aln_dir])
+    
+    run_raxml(command)
+    output_path = make_tree_path(alignment_path)
+    return output_path
 
 def make_branch_lengths(alignment_path, topology_path, datatype):
     #Now we re-estimate branchlengths using a GTR+G model on the (unpartitioned) dataset
@@ -108,21 +126,21 @@ def make_branch_lengths(alignment_path, topology_path, datatype):
 
     if datatype=="DNA":
         log.info("Estimating GTR+G branch lengths on tree using RAxML")
-        command = "-f e -s %s -t %s -m GTRGAMMA -n BLTREE" % (
-            alignment_path, tree_path)
+        command = "-f e -s '%s' -t '%s' -m GTRGAMMA -n BLTREE -w '%s'" % (
+            alignment_path, tree_path, dir_path)
         run_raxml(command)
     if datatype=="protein":
         log.info("Estimating LG+G branch lengths on tree using RAxML")
-        command = "-f e -s %s -t %s -m PROTGAMMALG -n BLTREE" % (
-            alignment_path, tree_path)
+        command = "-f e -s '%s' -t '%s' -m PROTGAMMALG -n BLTREE -w '%s'" % (
+            alignment_path, tree_path, dir_path)
         run_raxml(command)
         
     dir, aln = os.path.split(alignment_path)
-    tree_path = os.path.join(dir, "RAxML_info.BLTREE")
+    tree_path = os.path.join(dir, "RAxML_result.BLTREE")
     log.info("Branchlength estimation finished")
 
-    # Now return the path of the final tree alignment
-    return output_path
+    # Now return the path of the final tree with branch lengths
+    return tree_path
 
 def analyse(model, alignment_path, tree_path, branchlengths):
     """Do the analysis -- this will overwrite stuff!"""
@@ -140,12 +158,15 @@ def analyse(model, alignment_path, tree_path, branchlengths):
     else:
         # WTF?
         log.error("Unknown option for branchlengths: %s", branchlengths)
-        raise PhymlError
+        raise raxmlError
 
     #raxml doesn't append alignment names automatically, like PhyML, let's do that here
     analysis_ID = raxml_analysis_ID(alignment_path, model)
-    command = " %s -s '%s' -t '%s' %s -n %s" % (
-        bl, alignment_path, tree_path, model_params, analysis_ID)
+    
+    #force raxml to write to the dir with the alignment in it
+    aln_dir, fname = os.path.split(alignment_path)    
+    command = " %s -s '%s' -t '%s' %s -n %s -w '%s' " % (
+        bl, alignment_path, tree_path, model_params, analysis_ID, aln_dir)
     run_raxml(command)
 
 def raxml_analysis_ID(alignment_path, model):
@@ -159,10 +180,13 @@ def make_tree_path(alignment_path):
     tree_path = os.path.join(dir, "RAxML_parsimonyTree.MPTREE")
     return tree_path
 
-def make_output_path(aln_path, model):
+def make_output_path(alignment_path, model):
     analysis_ID = raxml_analysis_ID(alignment_path, model)
-    stats_path = "%sRAxML_info.%s" % (dir, analysis_ID)
-    tree_path = "%sRAxML_result.%s" % (pth, model)
+    dir, aln_file = os.path.split(alignment_path)
+    stats_fname = "RAxML_info.%s" % (analysis_ID)
+    stats_path = os.path.join(dir, stats_fname)
+    tree_fname = "RAxML_result.%s" % (analysis_ID)
+    tree_path = os.path.join(dir, tree_fname)
     return stats_path, tree_path
 
 class raxmlResult(object):
@@ -180,12 +204,17 @@ class Parser(object):
 
         OB = Suppress("(")
         CB = Suppress(")")
-        LNL_LABEL = Literal("Final GAMMA  likelihood:")
-        TIME_LABEL = Literal("Overall Time for Tree Evaluation")
-        HMS = Word(nums + "hms") # A bit rough...
+        LNL_LABEL_1 = Literal("Final GAMMA  likelihood:")
+        LNL_LABEL_2 = Literal("Likelihood:")
+        TIME_LABEL_1 = Literal("Overall Time for Tree Evaluation")
+        TIME_LABEL_2 = Literal("Time for branch length scaler and remaining model parameters optimization:")
+        
+        LNL_LABEL = (LNL_LABEL_1|LNL_LABEL_2)
+        TIME_LABEL = (TIME_LABEL_1|TIME_LABEL_2)
+
 
         lnl = (LNL_LABEL + FLOAT("lnl"))
-        time = (TIME_LABEL + FLOAT("time"))
+        seconds = (TIME_LABEL + FLOAT("seconds"))
 
         # Shorthand...
         def nextbit(label, val):
@@ -193,18 +222,18 @@ class Parser(object):
 
         # Just look for these things
         self.root_parser = \
-                nextbit(TIME_LABEL, time) +\
-                nextbit(LNL_LABEL, lnl)
+                nextbit(LNL_LABEL, lnl) +\
+                nextbit(TIME_LABEL, seconds)
 
     def parse(self, text):
-        # log.info("Parsing phyml output...")
+        log.debug("Parsing raxml output...")
         try:
             tokens = self.root_parser.parseString(text)
         except ParseException, p:
             log.error(str(p))
-            raise PhymlError
+            raise raxmlError
 
-        return PhymlResult(lnl=tokens.lnl, seconds=tokens.seconds)
+        return raxmlResult(lnl=tokens.lnl, seconds=tokens.seconds)
 
 # Stateless, so safe for use across threads. HMMMM, REALLY?
 the_parser = Parser()
@@ -217,6 +246,8 @@ if __name__ == '__main__':
     import tempfile, os
     from alignment import TestAlignment
     import raxml_models 
+
+    #test with a DNA alignment
     alignment = TestAlignment("""
 4 2208
 spp1     CTTGAGGTTCAGAATGGTAATGAA------GTGCTGGTGCTGGAAGTTCAGCAGCAGCTCGGCGGCGGTATCGTACGTACCATCGCCATGGGTTCTTCCGACGGTCTGCGTCGCGGTCTGGATGTAAAAGACCTCGAGCACCCGATCGAAGTCCCAGTTGGTAAAGCAACACTGGGTCGTATCATGAACGTACTGGGTCAGCCAGTAGACATGAAGGGCGACATCGGTGAAGAAGAGCGTTGGGCT---------------ATCCACCGTGAAGCACCATCCTATGAAGAGCTGTCAAGCTCTCAGGAACTGCTGGAAACCGGCATCAAAGTTATCGACCTGATGTGTCCGTTTGCGAAGGGCGGTAAAGTTGGTCTGTTCGGTGGTGCGGGTGTAGGTAAAACCGTAAACATGATGGAGCTTATTCGTAACATCGCGATCGAGCACTCCGGTTATTCTGTGTTTGCGGGCGTAGGTGAACGTACTCGTGAGGGTAACGACTTCTACCACGAAATGACCGACTCCAACGTTATCGAT---------------------AAAGTTTCTCTGGTTTATGGCCAGATGAACGAGCCACCAGGTAACCGTCTGCGCGTTGCGCTGACCGGTCTGACCATGGCTGAGAAGTTCCGTGACGAAGGTCGCGACGTACTGCTGTTCGTCGATAACATCTATCGTTACACCCTGGCAGGTACTGAAGTTTCAGCACTGCTGGGTCGTATGCCTTCAGCGGTAGGTTACCAGCCGACTCTGGCGGAAGAAATGGGCGTTCGCATTCCAACGCTGGAAGAGTGTGATATCTGCCACGGCAGCGGCGCTAAAGCCGGTTCGAAGCCGCAGACCTGTCCTACCTGTCACGGTGCAGGCCAGGTACAGATGCGCCAGGGCTTCTTCGCTGTACAGCAGACCTGTCCACACTGCCAGGGCCGCGGTACGCTGATCAAAGATCCGTGCAACAAATGTCACGGTCATGGTCGCGTAGAGAAAACCAAAACCCTGTCCGTAAAAATTCCGGCAGGCGTTGATACCGGCGATCGTATTCGTCTGACTGGCGAAGGTGAAGCTGGTGAGCACGGCGCACCGGCAGGCGATCTGTACGTTCAGGTGCAGGTGAAGCAGCACGCTATTTTCGAGCGTGAAGGCAACAACCTGTACTGTGAAGTGCCGATCAACTTCTCAATGGCGGCTCTTGGCGGCGAGATTGAAGTGCCGACGCTTGATGGTCGCGTGAAGCTGAAAGTTCCGGGCGAAACGCAAACTGGCAAGCTGTTCCGTATGCGTGGCAAGGGCGTGAAGTCCGTGCGCGGCGGTGCACAGGGCGACCTTCTGTGCCGCGTGGTGGTCGAGACACCGGTAGGTCTTAACGAGAAGCAGAAACAGCTGCTCAAAGATCTGCAGGAAAGTTTTGGCGGCCCAACGGGTGAAAACAACGTTGTTAACGCCCTGTCGCAGAAACTGGAATTGCTGATCCGCCGCGAAGGCAAAGTACATCAGCAAACTTATGTCCATGGTGTGCCACAGGCTCCGCTGGCGGTAACCGGTGAAACGGAAGTGACCGGTACACAGGTGCGTTTCTGGCCAAGCCACGAAACCTTCACCAACGTAATCGAATTCGAATATGAGATTCTGGCAAAACGTCTGCGCGAGCTGTCATTCCTGAACTCCGGCGTTTCCATCCGTCTGCGCGATAAGCGTGAC---GGCAAAGAAGACCATTTCCACTATGAAGGTGGTATCAAGGCGTTTATTGAGTATCTCAATAAAAATAAAACGCCTATCCACCCGAATATCTTCTACTTCTCCACCGAA---AAAGACGGTATTGGCGTAGAAGTGGCGTTGCAGTGGAACGATGGTTTCCAGGAAAACATCTACTGCTTCACCAACAACATTCCACAGCGTGATGGCGGTACTCACCTTGCAGGCTTCCGTGCGGCGATGACCCGTACGCTGAACGCTTACATGGACAAAGAAGGCTACAGCAAAAAAGCCAAA------GTCAGCGCCACCGGTGATGATGCCCGTGAAGGCCTGATTGCCGTCGTTTCCGTGAAAGTACCGGATCCGAAATTCTCCTCTCAGACTAAAGACAAACTGGTCTCTTCTGAGGTGAAAACGGCGGTAGAACAGCAGATGAATGAACTGCTGAGCGAATACCTGCTGGAAAACCCGTCTGACGCCAAAATC
@@ -228,9 +259,11 @@ spp4     CTCGAGGTGAAAAATGGTGATGCT------CGTCTGGTGCTGGAAGTTCAGCAGCAGCTGGGTGGTGGCGT
     pth = os.path.join(tmp, 'test.phy')
     alignment.write(pth)
     tree_path = make_topology(pth, "DNA")
+    print "TREE TOPOLOGY: ", tree_path
+    tree_path = make_branch_lengths(pth, tree_path, "DNA")
     log.info("Tree is %s:", open(tree_path).read())
 
-    for model in raxml_models.get_all_models():
+    for model in raxml_models.get_all_DNA_models():
         log.info("Analysing using model %s:" % model)
         analyse(model, pth, tree_path, "linked")
         stats_pth, tree_pth = make_output_path(pth, model)
@@ -238,4 +271,31 @@ spp4     CTCGAGGTGAAAAATGGTGATGCT------CGTCTGGTGCTGGAAGTTCAGCAGCAGCTGGGTGGTGGCGT
         res = parse(output)
         log.info("Result is %s", res)
 
-    # shutil.rmtree(tmp)
+    shutil.rmtree(tmp)
+
+    #test with a Protein alignment
+    alignment = TestAlignment("""
+4 949
+AD00P055  SLMLLISSSIVENGAGTGWTVYPPLSSNIAHSGSSVDLAIFSLHLAGISSILGAINFITTIINMKVNNLFFDQMSLFIWAVGITALLLLLSLPVLAGAITMLLTDRNLNTSFFDPAGGGDPILYQHLFWFFGHPXXXXXXXXXXGIISHIISQESGKKETFGSLGMIYAMLAIGLLGFIVWAHHMFTVGMDIDTRAYFTSATMIIAVPTGIKIFSWLATIYGTQINYSPSMLWSLGFIFLFAVGGLTGVILANSSIDITLHDTYYVVAHFHYVLSMGAIFAIFGGFIHWYPLFTGLMMNSYLLKIQFILMFIGVNXXXXXXXXXXXXXXXXXXXXXPDMXLSWNIISSLGSYMSFISMMMMMMIIWESMIKQRLILFSLNMSSSIEWLQNTPPNEHSYNELPILSNFMATWSNLNFQNSVSPLMEQIIFFHDHSLIILIMITMLLSYMMLSMFWNKFINRFLLEGQMIELIXXXXXXXXXXXXXXXXXRLLYLLDELNNPLITIKSIGHQWYWSYEYSDFKNIEFDSYMINEYNLNNFRLLDVDNRIIIPMNNNIRMLITATDVIHSWTVPSIGVKVDANPGRLNQTSFFINRPGIFFGQCSEICGANHSFMPIVIESISIKNFXDAPGHSDFIKNMITGTSQAXCAVLIVAAGTGEXEAGISKNGQTREHALXAFTLGVKQLIVGVNKMXSTEPPYSESRFEEIKKEVSSYIKKIGYNPAAVAFVPISGWHGDNMLEASTKMPWFKGWQVERKEGKAEGKCLIEALDAILPPARPTDKALRLPLQDVYKIGGIGTVPVGRVETGVLKPGTIVVFAPANITTEVKSVEMHHEXLQEAVPGDNVGFNVKNVSVKELRRGYVAGDTKNNPPKGAADFTAQVIVLNHPGQISNGYTPVLDCHTAHIACKFAEIKEKVDXXSGKSXEVDPKSIKSGDDAXVNMVXSKPLXXES
+RV03N585  SLMLLISSSIVENGAGTGWTVYPPLSSNIAHSGSSVDLAIFSLHLAGISSILGAINFITTIINMKVNNLFFDQMSLFIWAVGITALLLLLSLPVLAGAITMLLTDRNLNTSFFDPAGGGDPILYQHLFWFFGHPEVYILILPGFGIISHIISQESGKKETFGSLGMIYAMLAIGLLGFIVWAHHMFTVGMDIDTRAYITSATMIIAVPTGIKIFSWLATIYGTQINYSPSMLWSLGFIFLFAVGGLTGVILANSSIDITLHDTYYVVAHFHYVLSMGAIFAIFGGFIHWYPLFTGLMMNSYLLKIQFILMFIGVNXXXXXXXXXXXXXXXXXXXXXPDMFLSWNIISSLGSYMSFISMMMMMMIIWESMIKQRLILFSLNMSSSIEWLQNTPPNEHSYNELPILSNFMATWSNLNFQNSVSPLMEQIIFFHDHSLIILIMITMLLSYMMLSMFWNKFINRFLLEGQMIEXXXXXXXXIILIFIALPSLRLLYLLDELNNPLITIKSIGHQWYWSYEYSDFKNIEFDSYMINKYNLNNFRLLDVDNRIIIPMNNNIRMLITATDVIHSWTVPSIGVKVDANPGRLNQTSFFINRPGIFFGQCSEICGANHSFMPIVIESISIKNFIDAPGHSDFIKNMITGTSQADCAVLIVAAGTGEFEAGISKNGQTREHALLAFTLGVKQLIVGVNKMDSTEPPYSESRFEEIKKEVSSYIKKIGYNPAAVAFVPISGWHGDNMLEASTKMPWFKGWQVERKEGKAEGKCLIEALDAILPPARPTDKALRLPLQDVYKIGGIGTVPVGRVETGVLKPGTIVVFAPANITTEVKSVEMHHEALQEAVPGDNVGFNVKNVSVKELRRGYVAGDTKNNPPKGAADFTAQVIVLNHPGQISNGYTPVLDCHTAHIACKFAEIKEKVDRRSGKSTEVDPKSIKSGDAAIVNLVPSKPLCVES
+TDA99Q996 SLMLLISSSIVENGAGTGWTVYPPLSSNIAHSGSSVDLAIFSLHLAGISSILGAINFITTIINMKVNNMSFDQMSLFIWAVGITALLLLLSLPVLAGAITMLLTDRNLNTSFFDPAGGGDPILYQXXXXXXXXXXXXXXXXXXXXIISXIISQESXKKETFGSLGMIYAMLAIGLLGFIVWAHHMFTVGMDIDTRAYFTSATMIIAVPTGIKIFSWLATIYGSQINYSPSMLWSLGFIFLFAVGGLTGVILANSSIDITLHDTYYVVAHFHYVLSMGAIFAIFGGFIHWYPLFTGLMMNSYLLXIXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXLSWNIVSSLGSYMSFISMLLMMMIIWESMIKKRLILFSLNMSSSIEWLQNTPPNEHSYNELPILNNFMATWSNLNFQNSVSPLMEQIIFFNDHSLIILIMITMLLSYMMLSMFWNKFINRFLLEGQMXXLIXXXXXXXXXXXXXXXSLRLLYLLDELNNPLITIKSIGHQWYWSYEYSDFKNIEFDSYMINEYNLNNFRLLDVDNRIIIPMNNNIRMLITATDVIHSWTIPAIGVKVDANPGRLNQSSFFINRPGIFFGQCSEICGANHSFMPIVIESISIKNFIDAPGHSDFIKNMITGTSQADCAVLIVAAGTGEFEAGISKNGQTREHALLAFTLGVKQLIVGVNKMDSTEPPYSESRFEEIKKEVSSYIKKIGYNPAAVAFVPISGWHGDNMLEASTKMPWFKGWQVERKEGKAEGKCLIEALDAILPPARPTDKALRLPLQDVYKIGGIGTVPVGRVETGVLKPGTIVVFAPANITTEVKSVEMHHEALQEAVPGDNVGFNVKNVSVKELRRGYVAGDTKNNPPKGAADFTAQVIVLNHPGQISNGYTPVLDCHTAHIACKFAEIKEKVDRRSGKSTEVDPKSIKSGDAAIVNLVPSKPLCVES
+ZD99S305  SLMLLISSSIVENGAGTGWTVYPPLSSNIAHSGSSVDLAIFSLHLAGISSILGAINFITTIINMKVNNLFFDQMSLFIWAVGITALLLLLSLPVLAGAITMLLTDRNLNTSFFDPAGGGDPILYQHLFWFFGHPXXXXXXXXXXXXXXXXXXXESGKKETFGSLGMIYAMLAIGLLGFIVWAHHMFTVGMDIDTRAYFTSATMIIAVPTGIKIFSWLATIYGTQINYSPSMLWSLGFIFLFAVGGLTGVILANSSIDITLHDTYYVVAHFHYVLSMGAIFAIFGGFIHWYPLFTGLMMNSYLLKIQFILMXXXXXXXXXXXXXXXXXXXXXXXXXXPDMXLSWNIISSLGSYMSFISMMMMMMIIWESMIKQRLILFSLNMSSSIEWLQNTPPNEHSYNELPILSNFMATWSNLNFQNSVSPLMEQIIFFHDHSLIILIMITMLLSYMMLSMFWNKFINRFLLEGQMIELIXXXXXXIILIFIALPSLRLLYLLDELNNPLITIKSIGHQWYWSYEYSDFKNIEFDSYMINEYNLNNFRLLDVDNRIIIPMNNNIRMLITATDVIHSWTVPSIGVKVDANPGRLNQTSFFINRPGIFFGQCSEICGANHSFMPIVIESISIKNFIDAPGHSDFIKNMITGTSQADCAVLIVAAGTGEFEAGISKNGQTREHALLAFTLGVKQLIVGVNKMDSTEPPYSESRFEEIKKEVSSYIKKIGYNPAAVAFVPISGWHGDNMLEASTKMPWFKGWQVERKEGKAEGKCLIEALDAILPPARPTDKALRLPLQDVYKIGGIGTVPVGRVETGVLKPGTIVVFAPANITTEVKSVEMHHEALQEAVPGDNVGFNVKNVSVKELRRGYVAGDTKNNPPKGAADFTAQVIVLNHPGQISNGYTPVLDCHTAHIACKFAEIKEKVDRRSGKSTEVDPKSIKSGDAAIVNLVPSKPLCVES
+""")
+
+    tmp = tempfile.mkdtemp()
+    pth = os.path.join(tmp, 'test.phy')
+    alignment.write(pth)
+    tree_path = make_topology(pth, "protein")
+    print "TREE TOPOLOGY: ", tree_path
+    tree_path = make_branch_lengths(pth, tree_path, "protein")
+    log.info("Tree is %s:", open(tree_path).read())
+
+    for model in raxml_models.get_all_protein_models():
+        log.info("Analysing using model %s:" % model)
+        analyse(model, pth, tree_path, "linked")
+        stats_pth, tree_pth = make_output_path(pth, model)
+        output = open(stats_pth, 'rb').read()
+        res = parse(output)
+        log.info("Result is %s", res)
+
+    shutil.rmtree(tmp)
