@@ -34,7 +34,7 @@ if sys.platform == 'win32':
     _binary_name += ".exe"
 
 from util import PartitionFinderError
-class PhymlError(PartitionFinderError):
+class PhylogenyProgramError(PartitionFinderError):
     pass
 
 # def init_phyml(cfg):
@@ -68,7 +68,7 @@ def find_program():
     log.debug("Checking for program %s", _binary_name)
     if not os.path.exists(pth) or not os.path.isfile(pth):
         log.error("No such file: '%s'", pth)
-        raise PhymlError
+        raise PhylogenyProgramError
     log.debug("Found program %s at '%s'", _binary_name, pth)
     return pth
 
@@ -82,7 +82,7 @@ def find_program():
     # 
     # except subprocess.CalledProcessError:
         # log.error("command '%s' failed to execute successfully", command)
-        # raise PhymlError
+        # raise PhylogenyProgramError
 
 _phyml_binary = None
 def run_phyml(command):
@@ -114,7 +114,7 @@ def run_phyml(command):
         log.error("Phyml output follows, in case it's helpful for finding the problem")
         log.error("%s", stdout)
         log.error("%s", stderr)
-        raise PhymlError
+        raise PhylogenyProgramError
 
 def dupfile(src, dst):
     # Make a copy or a symlink so that we don't overwrite different model runs
@@ -127,7 +127,7 @@ def dupfile(src, dst):
         shutil.copyfile(src, dst)
     except OSError:
         log.error("Cannot link/copy file %s to %s", src, dst)
-        raise PhymlError
+        raise PhylogenyProgramError
 
 def make_topology(alignment_path, datatype):
 	'''Make a BioNJ tree to start the analysis'''
@@ -140,7 +140,7 @@ def make_topology(alignment_path, datatype):
 		command = "-i '%s' -o n -b 0 -d aa" % (alignment_path)
 	else:
 		log.error("Unrecognised datatype: '%s'" % (datatype))
-		raise(PhymlError)
+		raise(PhylogenyProgramError)
 		
 	run_phyml(command)
 	output_path = make_tree_path(alignment_path)
@@ -199,7 +199,7 @@ def analyse(model, alignment_path, tree_path, branchlengths):
     else:
         # WTF?
         log.error("Unknown option for branchlengths: %s", branchlengths)
-        raise PhymlError
+        raise PhylogenyProgramError
 
     command = "--run_id %s -b 0 -i '%s' -u '%s' %s %s" % (
         model, alignment_path, tree_path, model_params, bl)
@@ -256,7 +256,7 @@ class Parser(object):
             tokens = self.root_parser.parseString(text)
         except ParseException, p:
             log.error(str(p))
-            raise PhymlError
+            raise PhylogenyProgramError
 
         return PhymlResult(lnl=tokens.lnl, seconds=tokens.seconds)
 
