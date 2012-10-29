@@ -301,8 +301,11 @@ class Analysis(object):
                     if self.save_phylofiles:
                         pass
                     else:
-                        os.remove(stats_path)
-                        os.remove(tree_path)
+                        #we have the ifs because raxml doesn't output a treefile in some cases
+                        if os.path.isfile(stats_path):
+                            os.remove(stats_path)
+                        if os.path.isfile(tree_path):
+                            os.remove(tree_path)
 
                 except self.processor.PhylogenyProgramError:
                     log.warning("Failed loading parse output from %s."
