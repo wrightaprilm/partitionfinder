@@ -86,7 +86,7 @@ def run_raxml(command):
 def dupfile(src, dst):
     # Make a copy or a symlink so that we don't overwrite different model runs
     # of the same alignment
-    
+
     # TODO maybe this should throw...?
     try:
         if os.path.exists(dst):
@@ -108,11 +108,11 @@ def make_topology(alignment_path, datatype):
     else:
         log.error("Unrecognised datatype: '%s'" % (datatype))
         raise(PhylogenyProgramError)
-	
+
     #force raxml to write to the dir with the alignment in it
     aln_dir, fname = os.path.split(alignment_path)
-    command = ''.join([command, " -w '%s'" % aln_dir])
-    
+    command = ''.join([command, " -w '%s'" % os.abspath(aln_dir)])
+
     run_raxml(command)
     output_path = make_tree_path(alignment_path)
     return output_path
@@ -127,14 +127,14 @@ def make_branch_lengths(alignment_path, topology_path, datatype):
     if datatype=="DNA":
         log.info("Estimating GTR+G branch lengths on tree using RAxML")
         command = "-f e -s '%s' -t '%s' -m GTRGAMMA -n BLTREE -w '%s'" % (
-            alignment_path, tree_path, dir_path)
+            alignment_path, tree_path, os.abspath(dir_path))
         run_raxml(command)
     if datatype=="protein":
         log.info("Estimating LG+G branch lengths on tree using RAxML")
         command = "-f e -s '%s' -t '%s' -m PROTGAMMALG -n BLTREE -w '%s'" % (
-            alignment_path, tree_path, dir_path)
+            alignment_path, tree_path, os.abspath(dir_path))
         run_raxml(command)
-        
+
     dir, aln = os.path.split(alignment_path)
     tree_path = os.path.join(dir, "RAxML_result.BLTREE")
     log.info("Branchlength estimation finished")
@@ -162,11 +162,11 @@ def analyse(model, alignment_path, tree_path, branchlengths):
 
     #raxml doesn't append alignment names automatically, like PhyML, let's do that here
     analysis_ID = raxml_analysis_ID(alignment_path, model)
-    
+
     #force raxml to write to the dir with the alignment in it
-    aln_dir, fname = os.path.split(alignment_path)    
+    aln_dir, fname = os.path.split(alignment_path)
     command = " %s -s '%s' -t '%s' %s -n %s -w '%s' " % (
-        bl, alignment_path, tree_path, model_params, analysis_ID, aln_dir)
+        bl, alignment_path, tree_path, model_params, analysis_ID, os.abspath(aln_dir))
     run_raxml(command)
 
 def raxml_analysis_ID(alignment_path, model):
@@ -195,7 +195,7 @@ class raxmlResult(object):
         self.seconds = seconds
 
     def __str__(self):
-        return "RAxMLResult(lnl:%s, secs:%s)" % (self.lnl, self.seconds) 
+        return "RAxMLResult(lnl:%s, secs:%s)" % (self.lnl, self.seconds)
 
 class Parser(object):
     def __init__(self):
@@ -208,7 +208,7 @@ class Parser(object):
         LNL_LABEL_2 = Literal("Likelihood:")
         TIME_LABEL_1 = Literal("Overall Time for Tree Evaluation")
         TIME_LABEL_2 = Literal("Time for branch length scaler and remaining model parameters optimization:")
-        
+
         LNL_LABEL = (LNL_LABEL_1|LNL_LABEL_2)
         TIME_LABEL = (TIME_LABEL_1|TIME_LABEL_2)
 
@@ -245,7 +245,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     import tempfile, os
     from alignment import TestAlignment
-    import raxml_models 
+    import raxml_models
 
     #test with a DNA alignment
     alignment = TestAlignment("""
