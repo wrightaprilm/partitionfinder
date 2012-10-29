@@ -34,7 +34,7 @@ if sys.platform == 'win32':
     _binary_name += ".exe"
 
 from util import PartitionFinderError
-class PhylogenyProgramError(PartitionFinderError):
+class RaxmlError(PhylogenyProgramError):
     pass
 
 def find_program():
@@ -50,7 +50,7 @@ def find_program():
     log.debug("Checking for program %s", _binary_name)
     if not os.path.exists(pth) or not os.path.isfile(pth):
         log.error("No such file: '%s'", pth)
-        raise PhylogenyProgramError
+        raise RaxmlError
     log.debug("Found program %s at '%s'", _binary_name, pth)
     return pth
 
@@ -81,7 +81,7 @@ def run_raxml(command):
         log.error("RAxML output follows, in case it's helpful for finding the problem")
         log.error("%s", stdout)
         log.error("%s", stderr)
-        raise PhylogenyProgramError
+        raise RaxmlError
 
 def dupfile(src, dst):
     # Make a copy or a symlink so that we don't overwrite different model runs
@@ -94,7 +94,7 @@ def dupfile(src, dst):
         shutil.copyfile(src, dst)
     except OSError:
         log.error("Cannot link/copy file %s to %s", src, dst)
-        raise PhylogenyProgramError
+        raise RaxmlError
 
 def make_topology(alignment_path, datatype):
     '''Make a MP tree to start the analysis'''
@@ -107,7 +107,7 @@ def make_topology(alignment_path, datatype):
         command = "-y -s '%s' -m PROTGAMMALG -n MPTREE -p 123456789" % (alignment_path)
     else:
         log.error("Unrecognised datatype: '%s'" % (datatype))
-        raise(PhylogenyProgramError)
+        raise(RaxmlError)
 
     #force raxml to write to the dir with the alignment in it
     aln_dir, fname = os.path.split(alignment_path)
@@ -158,7 +158,7 @@ def analyse(model, alignment_path, tree_path, branchlengths):
     else:
         # WTF?
         log.error("Unknown option for branchlengths: %s", branchlengths)
-        raise PhylogenyProgramError
+        raise RaxmlError
 
     #raxml doesn't append alignment names automatically, like PhyML, let's do that here
     analysis_ID = raxml_analysis_ID(alignment_path, model)
@@ -231,7 +231,7 @@ class Parser(object):
             tokens = self.root_parser.parseString(text)
         except ParseException, p:
             log.error(str(p))
-            raise PhylogenyProgramError
+            raise RaxmlError
 
         return raxmlResult(lnl=tokens.lnl, seconds=tokens.seconds)
 
