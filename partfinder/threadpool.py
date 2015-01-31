@@ -101,8 +101,8 @@ class Pool(object):
         else:
             pass
 
- #       if self.failed:
-    #        raise self.exception
+        if self.failed:
+            raise self.exception
 
 
 class Thread(threading.Thread):
