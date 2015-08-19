@@ -1,0 +1,17 @@
+Format partfiles:
+for file in *.q; do sed -i 's/Multi,/Charset /g' $file; done
+or file in *.q; do  sed -i 's/$/;/' $file; done
+for f in *.q; do  mv -- "$f" "${f%.phy.best.q}.nex.q"; done
+
+
+format partcommand:
+for file in *.q; do grep -owe "Subset[0-9]" $file >> file.sets; done
+for file in *.sets; do sed -e :a -e N -e 's/\n/,/' -e ta $file > $file.new; done
+for file in *.new; do sed -i "s/^Subset/partition mine=4:Subset/1" $file; done
+for file in *.new; do var=$(sed 's/[^,]//g' $file | wc -c); sed -i "s/4/$var/1" $file;done
+for file in *.new; do  sed -i 's/$/;/' $file; done
+for f in *.q.sets.new; do  mv -- "$f" "${f%.phy.best.q.sets.new}.nex.new"; done
+
+
+for file in *.nex; do cat $file $file.nex.q $file.nex.new uni > $file.nexus; done
+
