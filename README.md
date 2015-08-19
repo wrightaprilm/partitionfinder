@@ -1,6 +1,6 @@
 # PartitionFinder
 
-PartitionFinderMorphology is a Python program for choosing partitioning schemes for discrete character data. 
+PartitionFinderMorphology is a Python2 program for choosing partitioning schemes for discrete character data. 
 You can use them before running a phylogenetic analysis, in order to decide how to divide up your sequence data into separate blocks before
 analysis.
 
@@ -33,7 +33,10 @@ and <foldername> is the full filepath to a folder with a phylip alignemnt and as
 + If all the data in your dataset are binary, specify 'binary' on line 10.
 + The command line option 'asc-corr=lewis' is an ascertainment bias correction. Unless you have collected invarient sites, you 
 need to specify an ascertainment correction. 'asc-corr=lewis' is the correction described in Paul Lewis' [2001](http://sysbio.oxfordjournals.org/content/50/6/913) paper introducing the Mk model. More information can be found on 
-the RAxML [website](http://sco.h-its.org/exelixis/resource/download/NewManual.pdf).
+the RAxML [website](http://sco.h-its.org/exelixis/resource/download/NewManual.pdf). If you call this correction, the program syntax will look like so:
+```python
+python PartitionFinderMorphology.py examples/morphology --cmdline-extras=' --asc-corr=lewis'
+```
 + In order to take advantage of these important corrections, make sure you are using at least version 8.1.13
 from the RAxML [github](https://github.com/stamatak/standard-RAxML/releases). 
 + Phylip is not a standard format for morphology, but it is very simple. It is simply the a one-line header with the name of species 
