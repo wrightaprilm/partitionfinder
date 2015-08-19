@@ -35,16 +35,16 @@ log = logging.getLogger("main")
 from optparse import OptionParser
 
 # We import everything here as it forces all of debug regions to be loaded
-import version
-import config
+from partfinder import config
 import analysis_method
 import util
+import version
+import cPickle as pickle
 import reporter
 import progress
 import datetime
 import parser
 import raxml
-import phyml
 from partfinder import current
 
 
@@ -92,7 +92,7 @@ def clean_folder(folder):
         try:
             if os.path.isfile(file_path):
                 os.unlink(file_path)
-        except Exception, e:
+        except Exception:
             log.error("Couldn't delete file from phylofiles folder: %s" % e)
             raise PartitionFinderError
             
@@ -262,8 +262,7 @@ def check_options(op, options):
         options.phylogeny_program = 'raxml'
     elif options.datatype == 'morphology':
 	    options.phylogeny_program = 'raxml'
-    else:
-        options.phylogeny_program = 'phyml'
+
 
 
 

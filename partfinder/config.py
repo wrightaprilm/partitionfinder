@@ -20,8 +20,8 @@ log = logging.getLogger("config")
 
 import os
 import fnmatch
-import cPickle as pickle
-import scheme
+#import cPickle as pickle
+from partfinder import scheme
 import subset
 import parser
 import util

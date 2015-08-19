@@ -14,7 +14,7 @@
 
 import logging
 log = logging.getLogger("config")
-import config
+
 
 # TODO: Not currently used
 # Activation should chdir, and maybe do some other stuff

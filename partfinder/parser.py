@@ -29,7 +29,6 @@ from pyparsing import (
 import scheme
 import subset
 import subset_ops
-import phyml_models
 import raxml_models
 import config
 from util import PartitionFinderError, make_warning
@@ -296,10 +295,7 @@ class Parser(object):
             raise PartitionFinderError
 
     def set_models(self, text, loc, tokens):
-        # TODO: Fix this ugly mess
-        if self.cfg.phylogeny_program == "phyml":
-            self.phylo_models = phyml_models
-        elif self.cfg.phylogeny_program == "raxml":
+        if self.cfg.phylogeny_program == "raxml":
             self.phylo_models = raxml_models
 
         all_dna_mods = set(self.phylo_models.get_all_dna_models())
@@ -327,13 +323,6 @@ class Parser(object):
                     modlist = list(all_protein_mods)
                 if self.cfg.datatype == "morphology":
                     modlist = list(all_morph_models)
-            elif modsgroup.lower() == "mrbayes":
-                modlist = set(phyml_models.get_mrbayes_models())
-            elif modsgroup.lower() == "beast":
-                modlist = set(phyml_models.get_beast_models())
-            elif modsgroup.lower() == "raxml":
-                modlist = set(phyml_models.get_raxml_models())
-            elif modsgroup.lower() == "all_protein":
                 modlist = set(self.phylo_models.get_all_protein_models())
             elif modsgroup.lower() == "all_protein_gamma":
                 if self.cfg.phylogeny_program == "raxml":
