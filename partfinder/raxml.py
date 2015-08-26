@@ -39,7 +39,8 @@ import raxml_models as models
 _binary_name = 'raxmlHPC-SSE3'
 if sys.platform == 'win32':
     _binary_name += ".exe"
-
+if sys.platform == 'darwin':
+    _binary_name = 'raxmlmac-SSE3'
 from util import PhylogenyProgramError
 
 
@@ -60,9 +61,9 @@ def find_program():
     pth = os.path.normpath(pth)
     log.debug("Checking for program %s", _binary_name)
     if not os.path.exists(pth) or not os.path.isfile(pth):
-        log.error("No such file: '%s'", pth)
+        log.error("No such file: %s", pth)
         raise RaxmlError
-    log.debug("Found program %s at '%s'", _binary_name, pth)
+    log.debug("Found program %s at %s", _binary_name, pth)
     return pth
 
 _raxml_binary = None
@@ -75,8 +76,8 @@ def run_raxml(command):
 
     # Add in the command file
     log.debug("Running 'raxml %s'", command)
-    command = "\"%s\" %s" % (_raxml_binary, command)
-
+    command = "%s %s" % (_raxml_binary, command)
+    print command
     # Note: We use shlex.split as it does a proper job of handling command
     # lines that are complex
     p = subprocess.Popen(
@@ -118,22 +119,23 @@ def make_topology(alignment_path, datatype, cmdline_extras):
 
     # First get the MP topology like this (-p is a hard-coded random number seed):
     if datatype == "DNA":
-        command = "-y -s '%s' -m GTRGAMMA -n MPTREE -p 123456789 %s" % (
+        command = "-y -s %s -m GTRGAMMA -n MPTREE -p 123456789 %s" % (
             alignment_path, cmdline_extras)
     elif datatype == "protein":
-        command = "-y -s '%s' -m PROTGAMMALG -n MPTREE -p 123456789 %s" % (
+        command = "-y -s %s -m PROTGAMMALG -n MPTREE -p 123456789 %s" % (
             alignment_path, cmdline_extras)
     elif datatype == "morphology":
-        command = "-y -s '%s' -m MULTIGAMMA -K MK -n MPTREE -p 123456789 %s" % (
+        command = "-y -s %s -m MULTIGAMMA -K MK -n MPTREE -p 123456789 %s" % (
             alignment_path, cmdline_extras)
+	print command
     else:
-        log.error("Unrecognised datatype: '%s'" % (datatype))
+        log.error("Unrecognised datatype: %s" % (datatype))
         raise(RaxmlError)
 
     #force raxml to write to the dir with the alignment in it
     aln_dir, fname = os.path.split(alignment_path)
-    command = ''.join([command, " -w '%s'" % os.path.abspath(aln_dir)])
-
+    command = ''.join([command, " -w %s" % os.path.abspath(aln_dir)])
+    print command
     run_raxml(command)
     dir, aln = os.path.split(alignment_path)
     tree_path = os.path.join(dir, "RAxML_parsimonyTree.MPTREE")
@@ -150,27 +152,27 @@ def make_branch_lengths(alignment_path, topology_path, datatype, cmdline_extras)
     os.remove(topology_path)  # saves headaches later...
     if datatype == "DNA":
         log.info("Estimating GTR+G branch lengths on tree using RAxML")
-        command = "-f e -s '%s' -t '%s' -m GTRGAMMA -n BLTREE -w '%s' %s" % (
+        command = "-f e -s %s -t %s -m GTRGAMMA -n BLTREE -w %s %s" % (
             alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)
         run_raxml(command)
     elif datatype == "protein":
         log.info("Estimating LG+G branch lengths on tree using RAxML")
-        command = "-f e -s '%s' -t '%s' -m PROTGAMMALG -n BLTREE -w '%s' %s" % (
+        command = "-f e -s %s -t %s -m PROTGAMMALG -n BLTREE -w %s %s" % (
             alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)
         run_raxml(command)
     elif datatype == "morphology":
         log.info("Estimating MK+G branch lengths on tree using RAxML")
-        command = "-f e -s '%s' -t '%s' -m MULTIGAMMA -K MK -n BLTREE -w '%s' %s" % (
+        command = "-f e -s %s -t %s -m MULTIGAMMA -K MK -n BLTREE -w %s %s" % (
             alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)
         run_raxml(command)
         dir, aln = os.path.split(alignment_path)
         tree_path = os.path.join(dir, "RAxML_result.BLTREE")
 
-        command = "-f g -s '%s' -m MULTIGAMMA -K MK -z %s -n LNL -w '%s' %s" % (
+        command = "-f g -s %s -m MULTIGAMMA -K MK -z %s -n LNL -w %s %s" % (
             alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)
         run_raxml(command)
     else:
-        log.error("Unrecognised datatype: '%s'" % (datatype))
+        log.error("Unrecognised datatype: %s" % (datatype))
         raise(RaxmlError)
 
     dir, aln = os.path.split(alignment_path)
@@ -235,7 +237,7 @@ def analyse(model, alignment_path, tree_path, branchlengths, cmdline_extras):
     #force raxml to write to the dir with the alignment in it
     #-e 1.0 sets the precision to 1 lnL unit. This is all that's required here, and helps with speed.
     aln_dir, fname = os.path.split(alignment_path)
-    command = " %s -s '%s' -t '%s' %s -n %s -w '%s' %s" % (
+    command = " %s -s %s -t %s %s -n %s -w %s %s" % (
         bl, alignment_path, tree_path, model_params, analysis_ID, os.path.abspath(aln_dir), cmdline_extras)
     run_raxml(command)
 
@@ -295,7 +297,7 @@ class Parser(object):
             # TODO: WTF are all these letters for?
             letters = "ABCDEFGHIJKLMNOPQRSTUV0123456789"
         else:
-            log.error("Unknown datatype '%s', please check" % datatype)
+            log.error("Unknown datatype %s, please check" % datatype)
             raise RaxmlError
 
         FLOAT = Word(nums + '.-').setParseAction(lambda x: float(x[0]))
@@ -420,10 +422,14 @@ def rate_parser(rates_name):
 
 
 def run_rates(command, report_errors=True):
-    program_name = "fast_TIGER"
+    if sys.platform == 'darwin':
+        program_name = "fast_TIGERmac"
+    else:
+	program_name == "fast_TIGERlinux"
     program_path = util.program_path
     program_path = os.path.join(program_path, program_name)
     command = "\"%s\" %s" % (program_path, command)
+    print command
     # Note: We use shlex.split as it does a proper job of handling command
     # lines that are complex
     p = subprocess.Popen(
