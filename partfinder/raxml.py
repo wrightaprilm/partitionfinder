@@ -422,12 +422,14 @@ def rate_parser(rates_name):
 
 
 def run_rates(command, report_errors=True):
+    _program_name = 'fast_TIGER'
+    
     if sys.platform == 'darwin':
-        program_name = "fast_TIGERmac"
+        _program_name = 'fast_TIGERmac'
     else:
-	program_name == "fast_TIGERlinux"
+	_program_name == 'fast_TIGERlinux'
     program_path = util.program_path
-    program_path = os.path.join(program_path, program_name)
+    program_path = os.path.join(program_path, _program_name)
     command = "\"%s\" %s" % (program_path, command)
     print command
     # Note: We use shlex.split as it does a proper job of handling command
