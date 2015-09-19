@@ -21,10 +21,12 @@ log = logging.getLogger("raxml")
 import subprocess
 import shlex
 import os
+import re
 import shutil
 import sys
 import fnmatch
 import util
+import numpy
 
 from pyparsing import (
     Word, Literal, nums, Suppress, ParseException,
@@ -42,7 +44,6 @@ if sys.platform == 'win32':
 if sys.platform == 'darwin':
     _binary_name = 'raxmlmac-SSE3'
 from util import PhylogenyProgramError
-
 
 class RaxmlError(PhylogenyProgramError):
     def __init__(self, stderr, stdout):
@@ -124,10 +125,15 @@ def make_topology(alignment_path, datatype, cmdline_extras):
     elif datatype == "protein":
         command = "-y -s %s -m PROTGAMMALG -n MPTREE -p 123456789 %s" % (
             alignment_path, cmdline_extras)
+    
     elif datatype == "morphology":
-        command = "-y -s %s -m MULTIGAMMA -K MK -n MPTREE -p 123456789 %s" % (
-            alignment_path, cmdline_extras)
-	print command
+    	if  'binary' not in cmdline_extras:
+        	command = "-y -s %s -m MULTIGAMMA -K MK -n MPTREE -p 123456789 %s" % (
+            	alignment_path, cmdline_extras)
+    	else:
+    		re.sub('binary','', cmdline_extras)
+        	command = "-y -s %s -m BINGAMMA -K MK -n MPTREE -p 123456789 %s" % (
+            	alignment_path, cmdline_extras)
     else:
         log.error("Unrecognised datatype: %s" % (datatype))
         raise(RaxmlError)
@@ -161,16 +167,34 @@ def make_branch_lengths(alignment_path, topology_path, datatype, cmdline_extras)
             alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)
         run_raxml(command)
     elif datatype == "morphology":
-        log.info("Estimating MK+G branch lengths on tree using RAxML")
-        command = "-f e -s %s -t %s -m MULTIGAMMA -K MK -n BLTREE -w %s %s" % (
-            alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)
-        run_raxml(command)
-        dir, aln = os.path.split(alignment_path)
-        tree_path = os.path.join(dir, "RAxML_result.BLTREE")
+		if 'binary' not in cmdline_extras:
+			log.info("Estimating MK+G branch lengths on tree using RAxML")
+			command = "-f e -s %s -t %s -m MULTIGAMMA -K MK -n BLTREE -w %s %s" % (
+				alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)
+			log.info("Tree is being estimated with the multi-state Mk model. If "
+					 "this is incorrect, and you need the binary, add: "
+					 "--cmdline-extras='binary' to your PartitionFinder call")
+		elif 'binary' in cmdline_extras:
+			re.sub('binary','', cmdline_extras)
+			log.info("Estimating MK+G branch lengths on tree using RAxML")
+			command = "-f e -s %s -t %s -m BINGAMMA -K MK -n BLTREE -w %s %s" % (
+				alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)            
+		corr_string = "--asc-corr=lewis" 
+		if corr_string.lower() not in cmdline_extras:
+			log.info("You have not selected a correction for ascertainment bias. "
+					 "Have you collected parsimony non-informative sites? See the "
+					 "RAxML manual and Lewis 2001 for more information on this " 
+					 "bias as it pertains to morphology. If you would like to use"
+					 " a correction, the syntax is: "
+					 " --cmdline-extras='--asc-corr=lewis'")
+			run_raxml(command)
+			dir, aln = os.path.split(alignment_path)
+			tree_path = os.path.join(dir, "RAxML_result.BLTREE")
+		elif corr_string.lower() in cmdline_extras:          
+			run_raxml(command)
+			dir, aln = os.path.split(alignment_path)
+			tree_path = os.path.join(dir, "RAxML_result.BLTREE")
 
-        command = "-f g -s %s -m MULTIGAMMA -K MK -z %s -n LNL -w %s %s" % (
-            alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)
-        run_raxml(command)
     else:
         log.error("Unrecognised datatype: %s" % (datatype))
         raise(RaxmlError)
@@ -295,7 +319,7 @@ class Parser(object):
             letters = "ATCG"
         elif datatype == "morphology":
             # TODO: WTF are all these letters for?
-            letters = "ABCDEFGHIJKLMNOPQRSTUV0123456789"
+            letters = "0123456789"
         else:
             log.error("Unknown datatype %s, please check" % datatype)
             raise RaxmlError
@@ -303,6 +327,7 @@ class Parser(object):
         FLOAT = Word(nums + '.-').setParseAction(lambda x: float(x[0]))
 
         L = Word(letters, exact=1)
+        
         COLON = Suppress(":")
 
         LNL_LABEL = Regex("Final GAMMA.+:") | Literal("Likelihood:")

@@ -77,7 +77,12 @@ class Configuration(object):
         if phylogeny_program != "phyml" and phylogeny_program != "raxml":
             log.error("Phylogeny program must be 'phyml' or 'raxml'")
             raise ConfigurationError
-
+            
+	if datatype == "morphology":
+		if phylogeny_program != "raxml":
+			log.error("RAxML must be used for morphological data.")
+			raise ConfigurationError
+            	
         # Import the right processor
         self.processor = __import__(phylogeny_program.lower(), globals())
 

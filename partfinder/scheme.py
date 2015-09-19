@@ -67,6 +67,7 @@ class SchemeResult(object):
 
         self.lnl = sum([s.best_lnl for s in sch])
         self.nsites = sum([len(s.column_set) for s in sch])
+        print self.nsites
 
         K = float(self.sum_k)
         n = float(self.nsites)
