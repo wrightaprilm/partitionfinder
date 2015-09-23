@@ -1,21 +1,19 @@
-#Copyright (C) 2012 Robert Lanfear and Brett Calcott
+# Copyright (C) 2012 Robert Lanfear and Brett Calcott
 #
-#This program is free software: you can redistribute it and/or modify it
-#under the terms of the GNU General Public License as published by the
-#Free Software Foundation, either version 3 of the License, or (at your
-#option) any later version.
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
 #
-#This program is distributed in the hope that it will be useful, but
-#WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-#General Public License for more details. You should have received a copy
-#of the GNU General Public License along with this program.  If not, see
-#<http://www.gnu.org/licenses/>. PartitionFinder also includes the PhyML
-#program, the RAxML program, the PyParsing library, and the python-cluster library
-#all of which are protected by their own licenses and conditions, using
-#PartitionFinder implies that you agree with those licences and conditions as well.
-
-"""Run raxml and parse the output"""
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details. You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# PartitionFinder also includes the PhyML program, the RAxML program, and the
+# PyParsing library, all of which are protected by their own licenses and
+# conditions, using PartitionFinder implies that you agree with those licences
+# and conditions as well.
 
 import logging
 log = logging.getLogger("raxml")
@@ -28,24 +26,24 @@ import shutil
 import sys
 import fnmatch
 import util
+import numpy
 
 from pyparsing import (
     Word, Literal, nums, Suppress, ParseException,
-    SkipTo, OneOrMore, Regex
+    SkipTo, OneOrMore, Regex, restOfLine
 )
 
 import raxml_models as models
 
-# This is set as the binary name because the previously compiled
-# raxml had a bug when calculating site likelihoods, this needs to
-# be changed back to "raxml" once a newer version without the bug
-# is compiled.
+# This is set as the binary name because the previously compiled raxml had a
+# bug when calculating site likelihoods, this needs to be changed back to
+# "raxml" once a newer version without the bug is compiled.
 _binary_name = 'raxmlHPC-SSE3'
 if sys.platform == 'win32':
     _binary_name += ".exe"
-
+if sys.platform == 'darwin':
+    _binary_name = 'raxmlmac-SSE3'
 from util import PhylogenyProgramError
-
 
 class RaxmlError(PhylogenyProgramError):
     def __init__(self, stderr, stdout):
@@ -62,12 +60,11 @@ def find_program():
     pth, notused = os.path.split(pth)
     pth = os.path.join(pth, "programs", _binary_name)
     pth = os.path.normpath(pth)
-
     log.debug("Checking for program %s", _binary_name)
     if not os.path.exists(pth) or not os.path.isfile(pth):
-        log.error("No such file: '%s'", pth)
+        log.error("No such file: %s", pth)
         raise RaxmlError
-    log.debug("Found program %s at '%s'", _binary_name, pth)
+    log.debug("Found program %s at %s", _binary_name, pth)
     return pth
 
 _raxml_binary = None
@@ -80,8 +77,8 @@ def run_raxml(command):
 
     # Add in the command file
     log.debug("Running 'raxml %s'", command)
-    command = "\"%s\" %s" % (_raxml_binary, command)
-
+    command = "%s %s" % (_raxml_binary, command)
+    print command
     # Note: We use shlex.split as it does a proper job of handling command
     # lines that are complex
     p = subprocess.Popen(
@@ -119,34 +116,32 @@ def dupfile(src, dst):
 def make_topology(alignment_path, datatype, cmdline_extras):
     '''Make a MP tree to start the analysis'''
     log.info("Making MP tree for %s", alignment_path)
-
     cmdline_extras = check_defaults(cmdline_extras)
 
     # First get the MP topology like this (-p is a hard-coded random number seed):
     if datatype == "DNA":
-        command = "-y -s '%s' -m GTRGAMMA -n MPTREE -p 123456789 %s" % (alignment_path, 
-                                                                        cmdline_extras)
+        command = "-y -s %s -m GTRGAMMA -n MPTREE -p 123456789 %s" % (
+            alignment_path, cmdline_extras)
     elif datatype == "protein":
-        command = "-y -s '%s' -m PROTGAMMALG -n MPTREE -p 123456789 %s" % (alignment_path, 
-                                                                           cmdline_extras)
+        command = "-y -s %s -m PROTGAMMALG -n MPTREE -p 123456789 %s" % (
+            alignment_path, cmdline_extras)
+    
     elif datatype == "morphology":
-        command = "-y -s %s -m MULTIGAMMA -K MK -n MPTREE -p 123456789 %s" % \
-                  (alignment_path, cmdline_extras)
-        if 'binary' not in cmdline_extras: 
-            command = "-y -s %s -m MULTIGAMMA -K MK -n MPTREE -p 123456789 %s" % \
-                      (alignment_path, cmdline_extras)           
-        else:
-            re.sub('binary','', cmdline_extras)
-            command = "-y -s %s -m BINGAMMA -K MK -n MPTREE -p 123456789 %s" % \
-                      (alignment_path, cmdline_extras) 
+    	if  'binary' not in cmdline_extras:
+        	command = "-y -s %s -m MULTIGAMMA -K MK -n MPTREE -p 123456789 %s" % (
+            	alignment_path, cmdline_extras)
+    	else:
+    		re.sub('binary','', cmdline_extras)
+        	command = "-y -s %s -m BINGAMMA -K MK -n MPTREE -p 123456789 %s" % (
+            	alignment_path, cmdline_extras)
     else:
-        log.error("Unrecognised datatype: '%s'" % (datatype))
+        log.error("Unrecognised datatype: %s" % (datatype))
         raise(RaxmlError)
 
     #force raxml to write to the dir with the alignment in it
     aln_dir, fname = os.path.split(alignment_path)
-    command = ''.join([command, " -w '%s'" % os.path.abspath(aln_dir)])
-
+    command = ''.join([command, " -w %s" % os.path.abspath(aln_dir)])
+    print command
     run_raxml(command)
     dir, aln = os.path.split(alignment_path)
     tree_path = os.path.join(dir, "RAxML_parsimonyTree.MPTREE")
@@ -161,46 +156,48 @@ def make_branch_lengths(alignment_path, topology_path, datatype, cmdline_extras)
     log.debug("Copying %s to %s", topology_path, tree_path)
     dupfile(topology_path, tree_path)
     os.remove(topology_path)  # saves headaches later...
-    
     if datatype == "DNA":
         log.info("Estimating GTR+G branch lengths on tree using RAxML")
-        command = "-f e -s '%s' -t '%s' -m GTRGAMMA -n BLTREE -w '%s' %s" % (
-                   alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)
+        command = "-f e -s %s -t %s -m GTRGAMMA -n BLTREE -w %s %s" % (
+            alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)
         run_raxml(command)
-    if datatype == "protein":
+    elif datatype == "protein":
         log.info("Estimating LG+G branch lengths on tree using RAxML")
-        command = "-f e -s '%s' -t '%s' -m PROTGAMMALG -n BLTREE -w '%s' %s" % ( \
-                  alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)
+        command = "-f e -s %s -t %s -m PROTGAMMALG -n BLTREE -w %s %s" % (
+            alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)
+        run_raxml(command)
     elif datatype == "morphology":
-        log.info("Estimating MK+G branch lengths on tree using RAxML")
-        if 'binary' not in cmdline_extras:
-            command = "-f e -s %s -t %s -m MULTIGAMMA -K MK -n BLTREE -w %s %s" % \
-                      (alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)
-            log.info("Estimating MK+G branch lengths on tree using RAxML")
-            run_raxml(command)
+		if 'binary' not in cmdline_extras:
+			log.info("Estimating MK+G branch lengths on tree using RAxML")
+			command = "-f e -s %s -t %s -m MULTIGAMMA -K MK -n BLTREE -w %s %s" % (
+				alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)
+			log.info("Tree is being estimated with the multi-state Mk model. If "
+					 "this is incorrect, and you need the binary, add: "
+					 "--cmdline-extras='binary' to your PartitionFinder call")
+		elif 'binary' in cmdline_extras:
+			re.sub('binary','', cmdline_extras)
+			log.info("Estimating MK+G branch lengths on tree using RAxML")
+			command = "-f e -s %s -t %s -m BINGAMMA -K MK -n BLTREE -w %s %s" % (
+				alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)            
+		corr_string = "--asc-corr=lewis" 
+		if corr_string.lower() not in cmdline_extras:
+			log.info("You have not selected a correction for ascertainment bias. "
+					 "Have you collected parsimony non-informative sites? See the "
+					 "RAxML manual and Lewis 2001 for more information on this " 
+					 "bias as it pertains to morphology. If you would like to use"
+					 " a correction, the syntax is: "
+					 " --cmdline-extras='--asc-corr=lewis'")
+			run_raxml(command)
+			dir, aln = os.path.split(alignment_path)
+			tree_path = os.path.join(dir, "RAxML_result.BLTREE")
+		elif corr_string.lower() in cmdline_extras:          
+			run_raxml(command)
+			dir, aln = os.path.split(alignment_path)
+			tree_path = os.path.join(dir, "RAxML_result.BLTREE")
 
-        elif 'binary' in cmdline_extras:
-            re.sub('binary','', cmdline_extras)
-            log.info("Estimating MK+G branch lengths on tree using RAxML")
-            command = "-f e -s %s -t %s -m BINGAMMA -K MK -n BLTREE -w %s %s" % (
-                alignment_path, tree_path, os.path.abspath(dir_path), cmdline_extras)            
-        corr_string = "--asc-corr=lewis" 
-        if corr_string.lower() not in cmdline_extras:
-            log.info("You have not selected a correction for ascertainment bias. "
-                     "Have you collected parsimony non-informative sites? See the "
-                     "RAxML manual and Lewis 2001 for more information on this " 
-                     "bias as it pertains to morphology. If you would like to use"
-                     " a correction, the syntax is: "
-                     " --cmdline-extras='--asc-corr=lewis'")
-            run_raxml(command)
-            dir, aln = os.path.split(alignment_path)
-            tree_path = os.path.join(dir, "RAxML_result.BLTREE")
-        elif corr_string.lower() in cmdline_extras:          
-            run_raxml(command)
-            dir, aln = os.path.split(alignment_path)
-            tree_path = os.path.join(dir, "RAxML_result.BLTREE")            
-            
-            run_raxml(command)
+    else:
+        log.error("Unrecognised datatype: %s" % (datatype))
+        raise(RaxmlError)
 
     dir, aln = os.path.split(alignment_path)
     tree_path = os.path.join(dir, "RAxML_result.BLTREE")
@@ -264,7 +261,7 @@ def analyse(model, alignment_path, tree_path, branchlengths, cmdline_extras):
     #force raxml to write to the dir with the alignment in it
     #-e 1.0 sets the precision to 1 lnL unit. This is all that's required here, and helps with speed.
     aln_dir, fname = os.path.split(alignment_path)
-    command = " %s -s '%s' -t '%s' %s -n %s -w '%s' %s" % (
+    command = " %s -s %s -t %s %s -n %s -w %s %s" % (
         bl, alignment_path, tree_path, model_params, analysis_ID, os.path.abspath(aln_dir), cmdline_extras)
     run_raxml(command)
 
@@ -320,13 +317,17 @@ class Parser(object):
             letters = "ARNDCQEGHILKMFPSTWYV"
         elif datatype == "DNA":
             letters = "ATCG"
+        elif datatype == "morphology":
+            # TODO: WTF are all these letters for?
+            letters = "0123456789"
         else:
-            log.error("Unknown datatype '%s', please check" % datatype)
+            log.error("Unknown datatype %s, please check" % datatype)
             raise RaxmlError
 
         FLOAT = Word(nums + '.-').setParseAction(lambda x: float(x[0]))
 
         L = Word(letters, exact=1)
+        
         COLON = Suppress(":")
 
         LNL_LABEL = Regex("Final GAMMA.+:") | Literal("Likelihood:")
@@ -359,6 +360,8 @@ class Parser(object):
 
         # Just look for these things
         self.root_parser = seconds + lnl + alpha + tree_size + rates + freqs
+        self.root_parser.ignore("LGM" + restOfLine)
+
 
     def set_seconds(self, tokens):
         self.result.seconds = tokens[0]
@@ -435,34 +438,58 @@ program_name = "raxml"
 def program():
     return program_name
 
+def rate_parser(rates_name):
+    rates_list = []
+    the_rates = open(rates_name)
+    for rate in the_rates.readlines():
+        rates_list.append([float(rate)])
+    return rates_list, None, None, None
+
+
+def run_rates(command, report_errors=True):
+    _program_name = 'fast_TIGER'
+    
+    if sys.platform == 'darwin':
+        _program_name = 'fast_TIGERmac'
+    else:
+	_program_name == 'fast_TIGERlinux'
+    program_path = util.program_path
+    program_path = os.path.join(program_path, _program_name)
+    command = "\"%s\" %s" % (program_path, command)
+    print command
+    # Note: We use shlex.split as it does a proper job of handling command
+    # lines that are complex
+    p = subprocess.Popen(
+    shlex.split(command),
+    shell=False,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE)
+    # Capture the output, we might put it into the errors
+    stdout, stderr = p.communicate()
+    # p.terminate()
+    if p.returncode != 0:
+        if report_errors == True:
+            log.error("rates_calculator did not execute successfully")
+            log.error("rates_calculator output follows, in case it's \
+                        helpful for finding the problem")
+            log.error("%s", stdout)
+            log.error("%s", stderr)
+        raise RaxmlError(stdout, stderr)
+
+
 def gen_per_site_stats(cfg, alignment_path, tree_path):
-    #raxml doesn't append alignment names automatically, like PhyML, let's do that here
     if cfg.datatype == 'DNA':
-        analysis_ID = raxml_analysis_ID(alignment_path, 'GTRGAMMA')
-
-        #force raxml to write to the dir with the alignment in it
-        #-e 1.0 sets the precision to 1 lnL unit. This is all that's required here, and helps with speed.
-        aln_dir, fname = os.path.split(alignment_path)
-        command = "-m GTRGAMMA -f g -s '%s' -z '%s' -n %s -w '%s'" % (
-            alignment_path, tree_path, analysis_ID, os.path.abspath(aln_dir))
-    elif cfg.datatype == 'protein':
-        analysis_ID = raxml_analysis_ID(alignment_path, 'LGGAMMA')
-
-        aln_dir, gname = os.path.split(alignment_path)
-        # log.error("RAxML kmeans splitting does not currently work with protein analyses")
-        # raise RaxmlError(0,0)
-        command = "-m PROTGAMMALG -f g -s '%s' -z '%s' -n '%s' -w '%s'" % (
-            alignment_path, tree_path, analysis_ID, os.path.abspath(aln_dir))
-
-    run_raxml(command)
-
-def get_per_site_stats(phylip_file, cfg):
+        command = " dna " + alignment_path
+    elif cfg.datatype == 'morphology':
+        command = " morphology " + alignment_path
+    run_rates(command, report_errors=False)
+'''
+def get_per_site_stats(phylip_file, cfg, tree_path):
     # Retrieve a list the per site stats. The phylip files are called
     # e.g. "67e2419ede57ae4032c534fe97ba408a.phy" we want the the number
     # before the full stop
-    phylip_file_split = os.path.split(phylip_file)
+    phylip_file_split = os.path.split(tree_path)
     subset_code = phylip_file_split[1].split(".")[0]
-    
     if cfg.datatype == 'DNA':
         raxml_lnl_file = os.path.join(phylip_file_split[0],
             ("RAxML_perSiteLLs.%s_GTRGAMMA.txt" % subset_code))
@@ -470,12 +497,21 @@ def get_per_site_stats(phylip_file, cfg):
     elif cfg.datatype == 'protein':
         raxml_lnl_file = os.path.join(phylip_file_split[0],
             ("RAxML_perSiteLLs.%s_LGGAMMA.txt" % subset_code))
+            
+    elif cfg.datatype == 'morphology':
+        raxml_lnl_file = os.path.join(phylip_file_split[0],
+            ("RAxML_perSiteLLs.LNL"))
 
     # Now we return a likelihood list with three empty slots. This is to
     # maintain consistency with the PhyML method which returns lists of rates
     # and other things as well
     likelihood_list = [likelihood_parser(raxml_lnl_file), None, None, None]
     return likelihood_list
+'''
+def get_per_site_stats(phylip_file, cfg):
+    rates_name = ("%s_r8s.txt" % phylip_file)
+
+    return rate_parser(rates_name)
 
 def fabricate(lnl):
     result = Parser('DNA')
@@ -495,3 +531,8 @@ if __name__ == '__main__':
     pth = "./tests/misc/raxml_aminoacid.output"
     p = Parser('protein')
     result = p.parse(open(pth).read())
+    
+    pth = "./tests/misc/raxml_morphology.output"
+    p = Parser('morphology')
+    result = p.parse(open(pth).read())
+
