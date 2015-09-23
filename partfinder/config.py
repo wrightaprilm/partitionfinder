@@ -67,8 +67,8 @@ class Configuration(object):
 
         # Some basic checking of the setup, so that we don't hit too many
         # problems later
-        if datatype != "DNA" and datatype != "protein":
-            log.error("datatype must be 'DNA' or 'protein'")
+        if datatype != "DNA" and datatype != "protein" and datatype != "morphology":
+            log.error("datatype must be 'DNA' or 'protein' or 'morphology'")
             raise ConfigurationError
 
         log.info("Setting datatype to '%s'", datatype)
@@ -77,7 +77,10 @@ class Configuration(object):
         if phylogeny_program != "phyml" and phylogeny_program != "raxml":
             log.error("Phylogeny program must be 'phyml' or 'raxml'")
             raise ConfigurationError
-
+        elif datatype == "morphology":
+			if phylogeny_program != "raxml":
+				log.error("RAxML must be used for morphological data.")
+				raise ConfigurationError
         # Import the right processor
         self.processor = __import__(phylogeny_program.lower(), globals())
 
