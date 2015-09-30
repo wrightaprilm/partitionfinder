@@ -17,5 +17,6 @@ Coelurus_fragilis                   11
 Ornitholestes_hermanni              10
 Huaxiagnathus_orientalis            10
     """
-    alignment.parse(test)
+    alignment.parse(test)		
+
     

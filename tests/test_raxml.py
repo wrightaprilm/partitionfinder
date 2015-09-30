@@ -76,3 +76,5 @@ ZD99S305  SLMLLISSSIVENGAGTGWTVYPPLSSNIAHSGSSVDLAIFSLHLAGISSILGAINFITTIINMKVNNLF
         log.info("Result is %s", res)
 
     shutil.rmtree(tmp)
+    
+  

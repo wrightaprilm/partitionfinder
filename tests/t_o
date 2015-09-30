@@ -1,0 +1,338 @@
+============================= test session starts ==============================
+platform darwin -- Python 2.7.10, pytest-2.8.1, py-1.4.30, pluggy-0.3.1
+rootdir: /Users/amwright/Documents/project_files/partitionfinder/tests, inifile: 
+collected 2 items / 22 errors
+
+clustering/tests.txt s
+full_analysis/tests.txt s
+
+==================================== ERRORS ====================================
+_______________________ ERROR collecting test_parser.py ________________________
+test_parser.py:1: in <module>
+    from partfinder.config import Configuration
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+______________________ ERROR collecting test_partition.py ______________________
+test_partition.py:2: in <module>
+    from partfinder.partition import Partition, PartitionError
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+________________________ ERROR collecting test_phyml.py ________________________
+test_phyml.py:1: in <module>
+    from partfinder import alignment
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+________________________ ERROR collecting test_raxml.py ________________________
+test_raxml.py:4: in <module>
+    from partfinder import raxml
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+______________________ ERROR collecting test_submodels.py ______________________
+test_submodels.py:1: in <module>
+    from partfinder.submodels import get_submodels, count_all_schemes
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+_______________________ ERROR collecting test_subset.py ________________________
+test_subset.py:1: in <module>
+    from partfinder.partition import Partition
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+_____________________ ERROR collecting cfg/test_configs.py _____________________
+cfg/test_configs.py:3: in <module>
+    from partfinder import util, config
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+__________________ ERROR collecting christof/test_christof.py __________________
+christof/test_christof.py:7: in <module>
+    from partfinder import main, util, analysis, config, alignment
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+________________ ERROR collecting clustering/test_clustering.py ________________
+clustering/test_clustering.py:3: in <module>
+    from partfinder import main, util, analysis, config
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+_________________ ERROR collecting full_analysis/test_full.py __________________
+full_analysis/test_full.py:3: in <module>
+    from partfinder import main, util, analysis, config
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+___________________ ERROR collecting morphology/test_AIC.py ____________________
+morphology/test_AIC.py:4: in <module>
+    from partfinder import main, util, scheme, analysis_method, config, alignment, results, reporter
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+___________________ ERROR collecting morphology/test_aicc.py ___________________
+morphology/test_aicc.py:3: in <module>
+    from partfinder import main, util, scheme, analysis_method, config, alignment
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+___________________ ERROR collecting morphology/test_bic.py ____________________
+morphology/test_bic.py:3: in <module>
+    from partfinder import main, util, scheme, analysis_method, config, alignment
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+_______________ ERROR collecting morphology/test_incorrectmat.py _______________
+morphology/test_incorrectmat.py:2: in <module>
+    from partfinder import alignment
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+___________________ ERROR collecting morphology/test_mat.py ____________________
+morphology/test_mat.py:2: in <module>
+    from partfinder import alignment
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+________________ ERROR collecting morphology/test_mixedtype.py _________________
+morphology/test_mixedtype.py:2: in <module>
+    from partfinder import alignment, raxml, config
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+_______________ ERROR collecting morphology/test_modeloutput.py ________________
+morphology/test_modeloutput.py:4: in <module>
+    from partfinder import main, util, scheme, analysis_method, config, alignment, results, reporter
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+__________________ ERROR collecting morphology/test_nsubs.py ___________________
+morphology/test_nsubs.py:3: in <module>
+    from partfinder import main, util, scheme, analysis_method, config, alignment
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+________________ ERROR collecting morphology/test_wrongmodel.py ________________
+morphology/test_wrongmodel.py:3: in <module>
+    from partfinder import main
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+__________________ ERROR collecting paul/test_phyml_parse.py ___________________
+paul/test_phyml_parse.py:1: in <module>
+    from phyml import likelihood_parser
+E   ImportError: No module named phyml
+__________________ ERROR collecting paul/test_raxml_parse.py ___________________
+paul/test_raxml_parse.py:1: in <module>
+    from raxml import likelihood_parser
+E   ImportError: No module named raxml
+________________ ERROR collecting quick_analysis/test_quick.py _________________
+quick_analysis/test_quick.py:2: in <module>
+    from partfinder import main
+../partfinder/__init__.py:17: in <module>
+    import config
+../partfinder/config.py:24: in <module>
+    import scheme
+../partfinder/scheme.py:19: in <module>
+    from partfinder import subset_ops
+../partfinder/subset_ops.py:20: in <module>
+    import subset
+../partfinder/subset.py:27: in <module>
+    from alignment import Alignment, SubsetAlignment
+../partfinder/alignment.py:39: in <module>
+    if datatype == 'morphology':
+E   NameError: name 'datatype' is not defined
+===================== 2 skipped, 22 error in 1.77 seconds ======================
