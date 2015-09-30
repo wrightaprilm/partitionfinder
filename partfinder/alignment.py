@@ -41,8 +41,8 @@ class AlignmentParser(object):
 
     # I think this covers it...
     BASES = Word(alphas + nums + "?.-")
-	morphoBASES = Word(nums + "?.-")
-	if datatype == morphology:
+    morphoBASES = Word(nums + "?.-")
+    if datatype == morphology:
     	BASES = morphbases
     
     
