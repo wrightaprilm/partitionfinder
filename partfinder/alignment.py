@@ -36,13 +36,16 @@ from util import PartitionFinderError
 class AlignmentError(PartitionFinderError):
     pass
 
-
 class AlignmentParser(object):
     """Parses an alignment and returns species sequence tuples"""
 
     # I think this covers it...
     BASES = Word(alphas + nums + "?.-")
-
+	morphoBASES = Word(nums + "?.-")
+	if datatype == morphology:
+    	BASES = morphbases
+    
+    
     def __init__(self):
         self.sequence_length = None
         self.species_count = None
@@ -50,6 +53,7 @@ class AlignmentParser(object):
         self.current_sequence = 0
 
         self.root_parser = self.phylip_parser() + stringEnd
+
 
     def phylip_parser(self):
 
@@ -81,7 +85,7 @@ class AlignmentParser(object):
         seq_continue_block.setParseAction(self.set_continue_block)
 
         return header + seq_start_block + ZeroOrMore(seq_continue_block)
-
+   
     def set_header(self, text, loc, tokens):
         self.sequence_length = tokens.sequence_length
         self.species_count = tokens.species_count
@@ -139,6 +143,7 @@ class AlignmentParser(object):
                 log.error("Bad Alignment file: species count in header does not match"
                           " number of sequences in file, please check")
                 raise AlignmentError
+
 
         return self.sequences
 
