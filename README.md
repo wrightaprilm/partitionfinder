@@ -14,7 +14,7 @@ is in the /docs folder.
 
 # Quick Start
 
-* Make sure you have Python 2.7 installed first, if not, go to www.python.org/getit/
+* Make sure you have Anaconda Python 2.7 installed first, if not, go to [the Anaconda website](https://www.continuum.io/downloads) to download.
 
 1.  Open Terminal (on a Mac or Linux machine) or Command Prompt (on Windows) and cd to the directory with PartitionFinder in it
 2.  Run PartitionFinder by typing at the command prompt:
